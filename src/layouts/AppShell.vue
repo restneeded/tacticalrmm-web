@@ -245,6 +245,17 @@ const navGroups = [
 
     .q-drawer__content { background-color: var(--color-bg-sidebar); }
   }
+
+  // Phase D drive-by fix: Quasar passes the q-drawer's `class` prop down
+  // to the inner .q-drawer__content div, NOT the outer <aside>. The aside
+  // therefore kept Quasar's default white background regardless of theme,
+  // which leaked through during the drawer's slide transition and at any
+  // point the inner content didn't fully cover the aside (visible as
+  // 'sidebar didn't flip'). Paint the aside via the same CSS variable so
+  // both elements track light/dark together.
+  aside.q-drawer {
+    background-color: var(--color-bg-sidebar);
+  }
   &__sidebar-inner {
     height: 100%;
     display: flex;
