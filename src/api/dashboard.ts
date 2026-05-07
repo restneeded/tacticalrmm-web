@@ -1,9 +1,27 @@
 // Phase B — dashboard tile fetchers.
 // Every tile reuses an EXISTING TRMM endpoint. See src/components/dashboard/.
 
-import axios from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
 
 import type { AlertSeverity } from "@/types/alerts";
+import { useAuthStore } from "@/stores/auth";
+
+// In dev, the global axios request interceptor in boot/axios.js doesn't
+// always re-attach after Vite HMR (the legacy app papers over this with
+// per-instance retries and a 401-redirect). For these dashboard tiles we
+// attach the Authorization header explicitly — surgical, no interceptor
+// refactor required, and still uses the same axios instance + Vite proxy.
+function authConfig(extra: AxiosRequestConfig = {}): AxiosRequestConfig {
+  const auth = useAuthStore();
+  const token = auth.token as string | null;
+  return {
+    ...extra,
+    headers: {
+      ...(extra.headers || {}),
+      ...(token ? { Authorization: `Token ${token}` } : {}),
+    },
+  };
+}
 
 // ── Pending alerts ────────────────────────────────────────────────────────────
 // PATCH /alerts/ with {top: N} returns count + last N unresolved alerts.
@@ -26,7 +44,7 @@ export interface TopAlertsResponse {
 }
 
 export async function fetchTopAlerts(top = 5): Promise<TopAlertsResponse> {
-  const { data } = await axios.patch<TopAlertsResponse>("/alerts/", { top });
+  const { data } = await axios.patch<TopAlertsResponse>("/alerts/", { top }, authConfig());
   return data;
 }
 
@@ -40,7 +58,7 @@ export interface PendingActionsResponse {
 }
 
 export async function fetchPendingActions(): Promise<PendingActionsResponse> {
-  const { data } = await axios.get("/logs/pendingactions/");
+  const { data } = await axios.get("/logs/pendingactions/", authConfig());
   if (Array.isArray(data)) {
     return { pending_actions_count: data.length, actions: data };
   }
@@ -64,7 +82,7 @@ export interface AgentHistoryRow {
 }
 
 export async function fetchAgentHistory(limit = 8): Promise<AgentHistoryRow[]> {
-  const { data } = await axios.get<AgentHistoryRow[]>("/agents/history/");
+  const { data } = await axios.get<AgentHistoryRow[]>("/agents/history/", authConfig());
   if (!Array.isArray(data)) return [];
   return data.slice(0, limit);
 }
@@ -88,6 +106,6 @@ export interface ClientSummary {
 }
 
 export async function fetchClientsOverview(): Promise<ClientSummary[]> {
-  const { data } = await axios.get<ClientSummary[]>("/clients/");
+  const { data } = await axios.get<ClientSummary[]>("/clients/", authConfig());
   return Array.isArray(data) ? data : [];
 }

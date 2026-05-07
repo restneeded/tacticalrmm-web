@@ -14,9 +14,18 @@
   >
     <div class="clients">
       <div class="clients__stats">
-        <Stat label="Clients"  :value="clientCount" />
-        <Stat label="Sites"    :value="siteCount" />
-        <Stat label="Agents"   :value="totalAgents" />
+        <div class="stat">
+          <div class="stat__value">{{ clientCount }}</div>
+          <div class="stat__label">Clients</div>
+        </div>
+        <div class="stat">
+          <div class="stat__value">{{ siteCount }}</div>
+          <div class="stat__label">Sites</div>
+        </div>
+        <div class="stat">
+          <div class="stat__value">{{ totalAgents }}</div>
+          <div class="stat__label">Agents</div>
+        </div>
       </div>
 
       <div v-if="failing.length" class="clients__failing">
@@ -34,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref, type FunctionalComponent } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import DashboardCard from "./DashboardCard.vue";
 import { fetchClientsOverview, type ClientSummary } from "@/api/dashboard";
@@ -76,14 +85,6 @@ const accent = computed<"ok" | "warn" | undefined>(() => {
   if (clientCount.value === 0) return undefined;
   return failing.value.length > 0 ? "warn" : "ok";
 });
-
-// Tiny stat sub-component, defined inline to keep this file self-contained.
-const Stat: FunctionalComponent<{ label: string; value: number }> = (props) =>
-  h("div", { class: "stat" }, [
-    h("div", { class: "stat__value" }, props.value),
-    h("div", { class: "stat__label" }, props.label),
-  ]);
-Stat.props = ["label", "value"];
 </script>
 
 <style lang="scss" scoped>
@@ -133,7 +134,7 @@ Stat.props = ["label", "value"];
   }
 }
 
-:deep(.stat) {
+.stat {
   &__value {
     font-size: var(--intune-font-size-700);
     font-weight: var(--intune-font-weight-semibold);

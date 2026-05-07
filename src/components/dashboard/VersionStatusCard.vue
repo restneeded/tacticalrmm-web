@@ -36,7 +36,8 @@
 import { computed, onMounted, ref } from "vue";
 
 import DashboardCard from "./DashboardCard.vue";
-import { fetchDashboardInfo } from "@/api/core";
+import axios from "axios";
+import { useAuthStore } from "@/stores/auth";
 
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -45,11 +46,14 @@ const latest = ref<string>("");
 
 onMounted(async () => {
   try {
-    const info = await fetchDashboardInfo();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const i = info as any;
-    current.value = String(i?.trmm_version || "");
-    latest.value = String(i?.latest_trmm_ver || "");
+    const auth = useAuthStore();
+    const token = auth.token as string | null;
+    const { data } = await axios.get<{ trmm_version: string; latest_trmm_ver: string }>(
+      "/core/dashinfo/",
+      { headers: token ? { Authorization: `Token ${token}` } : {} },
+    );
+    current.value = String(data.trmm_version || "");
+    latest.value = String(data.latest_trmm_ver || "");
   } catch (e) {
     error.value = "Could not load version";
     // eslint-disable-next-line no-console
