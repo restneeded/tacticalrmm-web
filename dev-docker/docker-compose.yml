@@ -1,0 +1,33 @@
+# Phase A dev server — runs Quasar dev with HMR, mounts the fork as a volume,
+# proxies API calls to https://rmm-api.bhsj.org via the Cloudflare tunnel.
+#
+# Bring up:
+#   cd /opt/tacticalrmm-fork/dev-server
+#   docker compose up -d --build
+#
+# Cloudflare tunnel routes rmm-dev.bhsj.org → http://10.104.8.67:9000.
+# That's why we bind to 0.0.0.0:9000 on the host (the cloudflared service
+# is on the host, not in this compose stack).
+
+services:
+  trmm-web-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trmm-web-dev
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /opt/tacticalrmm-fork/tacticalrmm-web:/app
+    environment:
+      DEV_HOST: "0.0.0.0"
+      DEV_PORT: "9000"
+      DEV_URL: "https://rmm-dev.bhsj.org"
+      PROD_URL: "https://rmm-api.bhsj.org"
+      DOCKER_BUILD: "true"
+      USE_HTTPS: "false"
+      # Avoid host-network linux file-watcher headaches under Docker.
+      CHOKIDAR_USEPOLLING: "true"
+      # Vite/Quasar respect this for HMR client-side host wiring.
+      VITE_HMR_HOST: "rmm-dev.bhsj.org"

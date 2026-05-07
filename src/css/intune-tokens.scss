@@ -1,0 +1,190 @@
+// Intune-style design tokens — Phase A
+// Anchored on Fluent 2 communication blue (#0078D4) used in Microsoft Intune admin center.
+// Tokens are exposed as CSS custom properties so theme switching is instant
+// (no SCSS recompile, no full re-render). Dark mode is selected via [data-theme="dark"]
+// on <html>. Light is the default.
+
+:root {
+  // ── Brand (Fluent communication ramp; Intune uses the 80=#0078D4 anchor) ──
+  --intune-brand-10:  #061724;
+  --intune-brand-20:  #082338;
+  --intune-brand-30:  #0a2e4a;
+  --intune-brand-40:  #0c3b5e;
+  --intune-brand-50:  #0e4775;
+  --intune-brand-60:  #0f548c;
+  --intune-brand-70:  #115ea3;
+  --intune-brand-80:  #0f6cbd;   // hover-deeper
+  --intune-brand-90:  #0078d4;   // ★ primary anchor (Microsoft blue / Intune)
+  --intune-brand-100: #2899f5;   // hover-lighter
+  --intune-brand-110: #3aa0f3;
+  --intune-brand-120: #6cb8f6;
+  --intune-brand-130: #94c8f9;
+  --intune-brand-140: #b4d6fa;
+  --intune-brand-150: #cfe4fa;
+  --intune-brand-160: #ebf3fc;
+
+  // ── Neutrals (Fluent gray ramp) ──
+  --intune-neutral-grey-2:   #050505;
+  --intune-neutral-grey-4:   #0a0a0a;
+  --intune-neutral-grey-6:   #0f0f0f;
+  --intune-neutral-grey-8:   #141414;
+  --intune-neutral-grey-10:  #1a1a1a;
+  --intune-neutral-grey-12:  #1f1f1f;
+  --intune-neutral-grey-14:  #242424;
+  --intune-neutral-grey-16:  #292929;
+  --intune-neutral-grey-18:  #2e2e2e;
+  --intune-neutral-grey-20:  #333333;
+  --intune-neutral-grey-22:  #383838;
+  --intune-neutral-grey-24:  #3d3d3d;
+  --intune-neutral-grey-26:  #424242;
+  --intune-neutral-grey-30:  #4d4d4d;
+  --intune-neutral-grey-38:  #616161;
+  --intune-neutral-grey-44:  #707070;
+  --intune-neutral-grey-50:  #808080;
+  --intune-neutral-grey-60:  #999999;
+  --intune-neutral-grey-70:  #b3b3b3;
+  --intune-neutral-grey-78:  #c7c7c7;
+  --intune-neutral-grey-86:  #dbdbdb;
+  --intune-neutral-grey-88:  #e0e0e0;
+  --intune-neutral-grey-92:  #ebebeb;
+  --intune-neutral-grey-94:  #f0f0f0;
+  --intune-neutral-grey-96:  #f5f5f5;
+  --intune-neutral-grey-98:  #fafafa;
+
+  // ── Status (Fluent semantic) ──
+  --intune-status-success:  #107c10;
+  --intune-status-warning:  #f7630c;
+  --intune-status-danger:   #c50f1f;
+  --intune-status-info:     #0078d4;
+
+  // ── Type scale (Fluent ramps), Segoe UI fallback to system stack ──
+  --intune-font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system,
+                        BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --intune-font-size-100: 10px;
+  --intune-font-size-200: 12px;
+  --intune-font-size-300: 14px;
+  --intune-font-size-400: 16px;
+  --intune-font-size-500: 20px;
+  --intune-font-size-600: 24px;
+  --intune-font-size-700: 28px;
+  --intune-font-size-800: 32px;
+  --intune-font-size-900: 40px;
+  --intune-font-weight-regular: 400;
+  --intune-font-weight-medium:  500;
+  --intune-font-weight-semibold: 600;
+  --intune-font-weight-bold:    700;
+  --intune-line-height-300: 20px;
+  --intune-line-height-400: 22px;
+  --intune-line-height-500: 28px;
+
+  // ── Spacing (4-px grid) ──
+  --intune-space-xxs:  2px;
+  --intune-space-xs:   4px;
+  --intune-space-s:    8px;
+  --intune-space-m:    12px;
+  --intune-space-l:    16px;
+  --intune-space-xl:   20px;
+  --intune-space-xxl:  24px;
+  --intune-space-xxxl: 32px;
+
+  // ── Radius ──
+  --intune-radius-none:   0;
+  --intune-radius-small:  2px;
+  --intune-radius-medium: 4px;
+  --intune-radius-large:  6px;
+  --intune-radius-xlarge: 8px;
+  --intune-radius-circular: 9999px;
+
+  // ── Shadow (Fluent 2 elevations) ──
+  --intune-shadow-2:  0 1px 2px rgba(0, 0, 0, 0.14), 0 0 2px rgba(0, 0, 0, 0.12);
+  --intune-shadow-4:  0 2px 4px rgba(0, 0, 0, 0.14), 0 0 2px rgba(0, 0, 0, 0.12);
+  --intune-shadow-8:  0 4px 8px rgba(0, 0, 0, 0.14), 0 0 2px rgba(0, 0, 0, 0.12);
+  --intune-shadow-16: 0 8px 16px rgba(0, 0, 0, 0.14), 0 0 2px rgba(0, 0, 0, 0.12);
+  --intune-shadow-28: 0 14px 28px rgba(0, 0, 0, 0.24), 0 0 8px rgba(0, 0, 0, 0.18);
+
+  // ── Motion (Fluent 2 curves & durations) ──
+  --intune-curve-accelerate-mid:   cubic-bezier(0.7, 0, 1, 0.5);
+  --intune-curve-decelerate-mid:   cubic-bezier(0.1, 0.9, 0.2, 1);
+  --intune-curve-easy-ease:        cubic-bezier(0.33, 0, 0.67, 1);
+  --intune-curve-linear:           linear;
+  --intune-duration-ultra-fast: 50ms;
+  --intune-duration-faster:    100ms;
+  --intune-duration-fast:      150ms;
+  --intune-duration-normal:    200ms;
+  --intune-duration-gentle:    250ms;
+  --intune-duration-slow:      300ms;
+
+  // ── Semantic aliases (LIGHT mode defaults) ──
+  --color-bg-canvas:     var(--intune-neutral-grey-98);   // page background
+  --color-bg-surface:    #ffffff;                          // cards / nav rail
+  --color-bg-surface-2:  var(--intune-neutral-grey-96);    // sidebar headers, hover
+  --color-bg-surface-3:  var(--intune-neutral-grey-94);    // hover deeper
+  --color-bg-sidebar:    #ffffff;
+  --color-bg-topbar:     #ffffff;
+  --color-bg-overlay:    rgba(255, 255, 255, 0.85);
+
+  --color-fg-primary:    var(--intune-neutral-grey-10);
+  --color-fg-secondary:  var(--intune-neutral-grey-30);
+  --color-fg-tertiary:   var(--intune-neutral-grey-44);
+  --color-fg-disabled:   var(--intune-neutral-grey-60);
+  --color-fg-on-brand:   #ffffff;
+
+  --color-stroke-divider: var(--intune-neutral-grey-88);
+  --color-stroke-control: var(--intune-neutral-grey-78);
+  --color-stroke-focus:   var(--intune-brand-90);
+
+  --color-brand-rest:    var(--intune-brand-90);
+  --color-brand-hover:   var(--intune-brand-80);
+  --color-brand-pressed: var(--intune-brand-70);
+  --color-brand-bg-rest: var(--intune-brand-150);
+  --color-brand-bg-hover: var(--intune-brand-140);
+
+  --color-selection-bg:  var(--intune-brand-150);
+  --color-selection-fg:  var(--intune-brand-70);
+
+  // Sidebar always reads "navy" in dark theme; in light theme it's a clean white rail
+  // (matches Intune admin center's behaviour: light shell w/ blue accents).
+}
+
+// ── DARK THEME — Intune admin center "Dark mode": deep navy sidebar, near-black canvas
+[data-theme="dark"] {
+  --color-bg-canvas:     #1b1a19;                        // Fluent dark gray-50
+  --color-bg-surface:    #292827;                        // Fluent dark gray-40
+  --color-bg-surface-2:  #323130;                        // Fluent dark gray-30
+  --color-bg-surface-3:  #3b3a39;                        // Fluent dark gray-20
+  --color-bg-sidebar:    #0a1828;                        // ★ Intune-style deep navy rail
+  --color-bg-topbar:     #20242c;                        // matches Intune top bar
+  --color-bg-overlay:    rgba(0, 0, 0, 0.6);
+
+  --color-fg-primary:    #ffffff;
+  --color-fg-secondary:  var(--intune-neutral-grey-78);
+  --color-fg-tertiary:   var(--intune-neutral-grey-60);
+  --color-fg-disabled:   var(--intune-neutral-grey-44);
+  --color-fg-on-brand:   #ffffff;
+
+  --color-stroke-divider: #3b3a39;
+  --color-stroke-control: #4d4d4d;
+  --color-stroke-focus:   var(--intune-brand-100);
+
+  --color-brand-rest:    var(--intune-brand-100);   // lighter blue pops on dark
+  --color-brand-hover:   var(--intune-brand-110);
+  --color-brand-pressed: var(--intune-brand-90);
+  --color-brand-bg-rest: rgba(0, 120, 212, 0.18);
+  --color-brand-bg-hover: rgba(0, 120, 212, 0.28);
+
+  --color-selection-bg:  rgba(0, 120, 212, 0.22);
+  --color-selection-fg:  var(--intune-brand-100);
+
+  --intune-shadow-2:  0 1px 2px rgba(0, 0, 0, 0.5),  0 0 2px rgba(0, 0, 0, 0.4);
+  --intune-shadow-4:  0 2px 4px rgba(0, 0, 0, 0.5),  0 0 2px rgba(0, 0, 0, 0.4);
+  --intune-shadow-8:  0 4px 8px rgba(0, 0, 0, 0.5),  0 0 2px rgba(0, 0, 0, 0.4);
+  --intune-shadow-16: 0 8px 16px rgba(0, 0, 0, 0.55), 0 0 2px rgba(0, 0, 0, 0.45);
+  --intune-shadow-28: 0 14px 28px rgba(0, 0, 0, 0.7), 0 0 8px rgba(0, 0, 0, 0.55);
+}
+
+// Smooth color transitions on theme flip — but only on theme-aware properties.
+html.theme-transitioning, html.theme-transitioning * {
+  transition: background-color var(--intune-duration-normal) var(--intune-curve-easy-ease),
+              color            var(--intune-duration-normal) var(--intune-curve-easy-ease),
+              border-color     var(--intune-duration-normal) var(--intune-curve-easy-ease) !important;
+}

@@ -13,6 +13,61 @@ const { configure } = require("quasar/wrappers");
 const path = require("path");
 require("dotenv").config();
 
+// Phase A: Vite dev-server proxy. The Vue app is served at rmm-dev.bhsj.org
+// while every backend route falls through to the existing prod API at
+// rmm-api.bhsj.org via Cloudflare's tunnel. This keeps the dev SPA same-origin
+// (no CORS pain) and means we don't have to modify the prod nginx CORS list.
+//
+// Backend routes (per tacticalrmm/api/.../urls.py): clients, agents, checks,
+// services, winupdate, software, core, automation, tasks, logs, scripts,
+// alerts, accounts, v2, api/v3, api/v4, reporting, _allauth, logout, logoutall,
+// natsws, and the WebSocket prefix /ws/.
+const API_PROXY_TARGET = process.env.PROD_URL || "https://rmm-api.bhsj.org";
+const API_PATH_PREFIXES = [
+  "clients",
+  "agents",
+  "checks",
+  "services",
+  "winupdate",
+  "software",
+  "core",
+  "automation",
+  "tasks",
+  "logs",
+  "scripts",
+  "alerts",
+  "accounts",
+  "v2",
+  "api",
+  "reporting",
+  "_allauth",
+  "logout",
+  "logoutall",
+  "natsws",
+];
+
+const devProxy = {};
+for (const p of API_PATH_PREFIXES) {
+  devProxy[`/${p}/`] = {
+    target: API_PROXY_TARGET,
+    changeOrigin: true,
+    secure: true,
+  };
+  // bare path with no trailing slash (e.g. POST /logout)
+  devProxy[`/${p}`] = {
+    target: API_PROXY_TARGET,
+    changeOrigin: true,
+    secure: true,
+  };
+}
+// WebSocket proxy — Django channels on /ws/...
+devProxy["/ws"] = {
+  target: API_PROXY_TARGET,
+  changeOrigin: true,
+  secure: true,
+  ws: true,
+};
+
 module.exports = configure(function (/* ctx */) {
   return {
     eslint: {
@@ -30,7 +85,7 @@ module.exports = configure(function (/* ctx */) {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
-    boot: ["pinia", "axios", "monaco", "integrations"],
+    boot: ["pinia", "theme", "axios", "monaco", "integrations"],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: ["app.sass"],
@@ -103,7 +158,21 @@ module.exports = configure(function (/* ctx */) {
       https: process.env.USE_HTTPS === "true",
       open: false, // opens browser window automatically
       host: process.env.DEV_HOST,
-      port: process.env.DEV_PORT,
+      port: process.env.DEV_PORT ? Number(process.env.DEV_PORT) : undefined,
+      // Phase A: HMR client must connect through Cloudflare on 443/wss when
+      // VITE_HMR_HOST is set; falls back to the default in plain local dev.
+      hmr: process.env.VITE_HMR_HOST
+        ? {
+            host: process.env.VITE_HMR_HOST,
+            protocol: "wss",
+            clientPort: 443,
+          }
+        : undefined,
+      // Allow rmm-dev.bhsj.org as a Vite host (Vite ≥4 blocks unknown hosts).
+      allowedHosts: process.env.VITE_HMR_HOST
+        ? [process.env.VITE_HMR_HOST, "localhost"]
+        : true,
+      proxy: devProxy,
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
@@ -134,7 +203,7 @@ module.exports = configure(function (/* ctx */) {
       // directives: [],
 
       // Quasar plugins
-      plugins: ["Dialog", "Loading", "LoadingBar", "Meta", "Notify"],
+      plugins: ["Dark", "Dialog", "Loading", "LoadingBar", "Meta", "Notify"],
     },
 
     // animations: 'all', // --- includes all animations
