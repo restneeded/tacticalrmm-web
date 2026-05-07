@@ -1,149 +1,158 @@
+<!--
+  HomeView (Phase B) — card-based dashboard at the route "/".
+  Tiles are listed in the `tiles` array below; every tile owns its own
+  fetching / loading / error / empty state. A future "Customize dashboard"
+  feature can persist a user-specific reordering of this array without
+  reshuffling files. Each tile MUST render real data from an existing
+  TRMM endpoint — never fake data. If an endpoint is missing, the tile
+  is omitted, not invented.
+-->
 <template>
-  <q-page padding class="home">
-    <header class="home__hero">
-      <h1 class="home__title">Tactical RMM, reimagined.</h1>
-      <p class="home__lede">
-        Phase A: Intune-style design system, theme switching, and a router-driven
-        shell are live. The dashboard, devices, software, patching, and reports
-        screens land in subsequent phases.
-      </p>
-      <div class="home__chip-row">
-        <span class="home__chip home__chip--ok">Design tokens</span>
-        <span class="home__chip home__chip--ok">Theme switcher</span>
-        <span class="home__chip home__chip--ok">App shell</span>
-        <span class="home__chip home__chip--pending">Devices · Phase&nbsp;C</span>
-        <span class="home__chip home__chip--pending">Software · Phase&nbsp;D</span>
-        <span class="home__chip home__chip--pending">Patching · Phase&nbsp;F</span>
+  <q-page class="dashboard">
+    <header class="dashboard__hero">
+      <div>
+        <h1 class="dashboard__title">Dashboard</h1>
+        <p class="dashboard__lede">
+          Fleet posture at a glance. Live counts pull from the TRMM dashboard
+          websocket; everything else refreshes on its own cadence.
+        </p>
       </div>
+      <span class="dashboard__last-update">
+        Welcome back<span v-if="username">, {{ username }}</span>.
+      </span>
     </header>
 
-    <section class="home__grid">
-      <article class="home__card">
-        <q-icon name="palette" size="24px" class="home__card-icon" />
-        <h2 class="home__card-title">Intune-style palette</h2>
-        <p class="home__card-body">
-          Anchored on Microsoft Intune's primary blue (#0078D4) and Fluent 2's
-          neutral ramp. CSS custom properties drive instant light/dark switching.
-        </p>
-      </article>
-
-      <article class="home__card">
-        <q-icon name="dark_mode" size="24px" class="home__card-icon" />
-        <h2 class="home__card-title">Light, dark, and system</h2>
-        <p class="home__card-body">
-          The theme button in the top bar cycles light → dark → system. Your
-          choice is persisted to localStorage and tracked against your OS
-          preference.
-        </p>
-      </article>
-
-      <article class="home__card">
-        <q-icon name="route" size="24px" class="home__card-icon" />
-        <h2 class="home__card-title">Router-driven shell</h2>
-        <p class="home__card-body">
-          The 913-line monolith now lives at <code>/legacy</code>. Every
-          subsequent phase peels one tab off and lands it as a real route here.
-        </p>
-      </article>
-
-      <article class="home__card">
-        <q-icon name="rocket_launch" size="24px" class="home__card-icon" />
-        <h2 class="home__card-title">Killer feature: app takeover</h2>
-        <p class="home__card-body">
-          Phase D &amp; E will let you socket in to apps already installed on
-          your fleet, learn their version posture, and proactively keep them
-          aligned. Minimal setup. Understandable in five years.
-        </p>
-      </article>
+    <section
+      class="dashboard__grid"
+      role="list"
+      aria-label="Dashboard tiles"
+    >
+      <div
+        v-for="tile in tiles"
+        :key="tile.id"
+        class="dashboard__cell"
+        :class="`dashboard__cell--${tile.size}`"
+        role="listitem"
+      >
+        <component :is="tile.component" />
+      </div>
     </section>
   </q-page>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { computed, markRaw } from "vue";
+
+import { useAuthStore } from "@/stores/auth";
+
+import FleetStatusCard from "@/components/dashboard/FleetStatusCard.vue";
+import PendingAlertsCard from "@/components/dashboard/PendingAlertsCard.vue";
+import PendingActionsCard from "@/components/dashboard/PendingActionsCard.vue";
+import ActivityFeedCard from "@/components/dashboard/ActivityFeedCard.vue";
+import ClientsOverviewCard from "@/components/dashboard/ClientsOverviewCard.vue";
+import CertExpiryCard from "@/components/dashboard/CertExpiryCard.vue";
+import VersionStatusCard from "@/components/dashboard/VersionStatusCard.vue";
+
+interface DashboardTile {
+  id: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  component: any;
+  /** width in the 12-col grid: "wide" = 6, "medium" = 4. */
+  size: "wide" | "medium";
+}
+
+// Order is the default layout. A future user-prefs feature can override this
+// by storing an alternate array; the contract for each tile (self-contained
+// fetch + loading + error + empty) is what makes that future change cheap.
+const tiles: DashboardTile[] = [
+  { id: "fleet",     component: markRaw(FleetStatusCard),    size: "wide" },
+  { id: "activity",  component: markRaw(ActivityFeedCard),   size: "wide" },
+  { id: "alerts",    component: markRaw(PendingAlertsCard),  size: "medium" },
+  { id: "pending",   component: markRaw(PendingActionsCard), size: "medium" },
+  { id: "clients",   component: markRaw(ClientsOverviewCard),size: "medium" },
+  { id: "cert",      component: markRaw(CertExpiryCard),     size: "medium" },
+  { id: "version",   component: markRaw(VersionStatusCard),  size: "medium" },
+];
+
+const auth = useAuthStore();
+const username = computed(() => auth.username || "");
+</script>
 
 <style lang="scss" scoped>
-.home {
-  max-width: 1100px;
+.dashboard {
+  padding: 28px 32px 64px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 32px 32px 64px;
 
   &__hero {
-    margin-bottom: 32px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
   }
   &__title {
     font-size: var(--intune-font-size-800);
     font-weight: var(--intune-font-weight-semibold);
-    line-height: 1.15;
-    margin: 0 0 12px 0;
+    line-height: 1.1;
+    margin: 0 0 6px 0;
     color: var(--color-fg-primary);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.4px;
   }
   &__lede {
-    font-size: var(--intune-font-size-400);
-    line-height: 1.5;
+    font-size: var(--intune-font-size-300);
     color: var(--color-fg-secondary);
-    margin: 0 0 20px 0;
-    max-width: 760px;
+    margin: 0;
+    max-width: 720px;
   }
-  &__chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  &__chip {
+  &__last-update {
     font-size: var(--intune-font-size-200);
-    padding: 4px 10px;
-    border-radius: var(--intune-radius-circular);
-    font-weight: var(--intune-font-weight-semibold);
-    border: 1px solid var(--color-stroke-divider);
-    &--ok {
-      background-color: rgba(16, 124, 16, 0.1);
-      color: var(--intune-status-success);
-      border-color: rgba(16, 124, 16, 0.25);
-    }
-    &--pending {
-      background-color: var(--color-bg-surface-2);
-      color: var(--color-fg-secondary);
-    }
+    color: var(--color-fg-tertiary);
+    white-space: nowrap;
+    margin-top: 4px;
   }
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(12, 1fr);
     gap: 16px;
   }
-  &__card {
-    background-color: var(--color-bg-surface);
-    border: 1px solid var(--color-stroke-divider);
-    border-radius: var(--intune-radius-large);
-    padding: 20px;
-    transition: box-shadow var(--intune-duration-fast) var(--intune-curve-easy-ease),
-                border-color var(--intune-duration-fast) var(--intune-curve-easy-ease);
-    &:hover {
-      box-shadow: var(--intune-shadow-4);
-      border-color: var(--color-stroke-control);
+  &__cell {
+    display: flex;
+    > :deep(*) {
+      width: 100%;
     }
   }
-  &__card-icon {
-    color: var(--color-brand-rest);
-    margin-bottom: 8px;
+
+  // 12-col widths
+  &__cell--wide   { grid-column: span 6; }
+  &__cell--medium { grid-column: span 4; }
+
+  // Tablet — collapse to 6-col grid
+  @media (max-width: 1024px) {
+    padding: 20px 24px 48px;
+    &__grid {
+      grid-template-columns: repeat(6, 1fr);
+    }
+    &__cell--wide   { grid-column: span 6; }
+    &__cell--medium { grid-column: span 3; }
   }
-  &__card-title {
-    font-size: var(--intune-font-size-500);
-    font-weight: var(--intune-font-weight-semibold);
-    margin: 0 0 6px 0;
-    color: var(--color-fg-primary);
-  }
-  &__card-body {
-    font-size: var(--intune-font-size-300);
-    line-height: 1.5;
-    color: var(--color-fg-secondary);
-    margin: 0;
-    code {
-      background-color: var(--color-bg-surface-2);
-      padding: 1px 6px;
-      border-radius: 3px;
-      font-size: 12px;
+
+  // Phone — single column
+  @media (max-width: 600px) {
+    padding: 16px 16px 40px;
+    &__hero {
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    &__grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    &__cell--wide,
+    &__cell--medium {
+      grid-column: 1 / -1;
     }
   }
 }
