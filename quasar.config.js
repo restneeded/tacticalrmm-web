@@ -160,6 +160,83 @@ module.exports = configure(function (/* ctx */) {
             },
           },
         });
+
+        // Phase E render fix: Vite 2.9.18 (pinned by @quasar/app-vite 1.10.2) is
+        // prone to optimizer thrashing in dev mode. Boot-file dynamic imports and
+        // page-level lazy imports cause Vite to discover deps after the initial
+        // cold-bundle, then re-optimize — each rebuild produces a new ?v=<hash>
+        // suffix. Modules pinned to OLD hashes keep loading old bundle copies, so
+        // a single dev page load can pull 4+ separate Vue runtime instances. Vue's
+        // module-local `currentRenderingInstance` is NOT in __VUE_INSTANCE_SETTERS__
+        // (only `currentInstance` is), so it never syncs across the duplicates;
+        // _resolveComponent("router-view") reads null currentInstance and falls
+        // back to the literal HTML tag, leaving <router-view> unrendered.
+        //
+        // Fix: explicitly enumerate all runtime deps so Vite bundles them in ONE
+        // pass during cold-start, before serving any module to the browser. The
+        // result is a single stable ?v=<hash> across the page load → single Vue
+        // runtime → router-view renders.
+        if (isClient) {
+          // Stop Vite from telling the browser to cache pre-bundled deps with
+          // "max-age=31536000, immutable". When the optimizer re-bundles (and
+          // it WILL on every dev-server restart), old ?v=<hash> URLs linger in
+          // the browser cache forever, mixing with new chunks → multi-Vue. In
+          // dev we just want every fetch to revalidate against the live server.
+          viteConf.server = mergeConfig(viteConf.server || {}, {
+            headers: {
+              "Cache-Control": "no-store, max-age=0",
+            },
+          });
+
+          // The actual root cause: npm's hoisting installs multiple copies of
+          // @vue/shared@3.5.22 (under @vue/reactivity, @vue/runtime-core, vue,
+          // and top-level node_modules). Vite bundles each runtime sub-package
+          // with its OWN copy of @vue/shared, so the `currentInstance` and
+          // `currentRenderingInstance` module-locals exist 3-4 times. Only one
+          // is set during render; resolveComponent reads null from another and
+          // App.vue's <router-view> falls back to a literal HTML tag.
+          //
+          // resolve.dedupe forces a single resolution path for these packages
+          // regardless of where the import originates in the dep graph.
+          viteConf.resolve = mergeConfig(viteConf.resolve || {}, {
+            dedupe: [
+              "vue",
+              "@vue/runtime-core",
+              "@vue/runtime-dom",
+              "@vue/reactivity",
+              "@vue/shared",
+              "vue-router",
+              "pinia",
+            ],
+          });
+
+          // Pre-bundle all runtime deps in ONE optimizer pass on cold start so
+          // the dev server emits a single stable ?v=<hash> across the page load,
+          // instead of lazily re-optimizing as new imports are discovered.
+          viteConf.optimizeDeps = mergeConfig(viteConf.optimizeDeps || {}, {
+            include: [
+              "vue",
+              "vue-router",
+              "pinia",
+              "axios",
+              "vuex",
+              "@vueuse/core",
+              // @vueuse/integrations top-level imports many optional peer deps
+              // (async-validator, change-case, drauu, focus-trap, ...) that
+              // aren't installed. Pin only the sub-path the app actually uses.
+              "@vueuse/integrations/useQRCode",
+              "monaco-editor",
+              "vue3-apexcharts",
+              "apexcharts",
+              "dompurify",
+              "yaml",
+              "qrcode",
+              "@xterm/xterm",
+              "@xterm/addon-fit",
+              "vuedraggable",
+            ],
+          });
+        }
       },
       /* eslint-enable quotes */
       // viteVuePluginOptions: {},
