@@ -134,7 +134,7 @@ module.exports = configure(function (/* ctx */) {
       // publicPath: '/',
       // analyze: true,
       env: {
-        DEV_API: process.env.DEV_URL,
+        DEV_API: process.env.DEV_API !== undefined ? process.env.DEV_API : process.env.DEV_URL,
         PROD_API: process.env.PROD_URL,
         DOCKER_BUILD: process.env.DOCKER_BUILD,
       },
