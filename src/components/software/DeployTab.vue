@@ -224,7 +224,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, watch } from "vue";
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useQuasar } from "quasar";
 
 import {
@@ -310,6 +310,30 @@ async function loadJobs() {
   }
 }
 
+// Phase G: poll the recent-deploys panel while any visible job is non-
+// terminal. Stops on its own as soon as everything reaches done|partial|
+// failed or when the component unmounts.
+const TERMINAL_STATUSES = new Set(["done", "partial", "failed"]);
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+function ensurePollingMatchesState() {
+  const active = jobs.value.some((j) => !TERMINAL_STATUSES.has(j.status));
+  if (active && pollTimer === null) {
+    pollTimer = setInterval(() => {
+      loadJobs().catch(() => { /* swallow — next tick will retry */ });
+    }, 5000);
+  } else if (!active && pollTimer !== null) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+watch(jobs, ensurePollingMatchesState, { deep: true });
+onBeforeUnmount(() => {
+  if (pollTimer !== null) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+});
+
 function onDeploy(row: CatalogPackage) {
   selectedPackage.value = row;
 }
@@ -317,19 +341,23 @@ function onDeploy(row: CatalogPackage) {
 async function onDeployed(resp: DeployCreateResponse) {
   selectedPackage.value = null;
   await loadJobs();
-  let msg = `Deploy submitted: ${resp.dispatched} dispatched`;
-  if (resp.skipped > 0) {
-    msg += `, ${resp.skipped} skipped`;
-  }
+  // Phase G: the response is now async-style (status=queued, no
+  // dispatched/skipped totals). Surface that in the toast and let the
+  // polling loop reflect the real outcome on the recent-deploys panel.
   if (resp.skipped_already_installed.length > 0) {
     $q.notify({
       type: "warning",
-      message: msg,
-      caption: `${resp.skipped_already_installed.length} agents already had this app — use Discovery → Take Over to manage their version.`,
+      message: `Deploy queued (#${resp.job_id})`,
+      caption: `${resp.skipped_already_installed.length} agents already had this app — they were skipped. The dispatch worker is now processing the rest.`,
       timeout: 6000,
     });
   } else {
-    $q.notify({ type: "positive", message: msg, timeout: 4000 });
+    $q.notify({
+      type: "positive",
+      message: `Deploy queued (#${resp.job_id})`,
+      caption: `Targeting ${resp.total_agents} agent${resp.total_agents === 1 ? "" : "s"}. Status will update as the worker dispatches.`,
+      timeout: 4000,
+    });
   }
 }
 

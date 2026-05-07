@@ -227,7 +227,8 @@ export interface DeployOptions {
 export interface DeployJobSummary {
   id: number;
   kind: "deploy" | "auto-update";
-  status: "queued" | "running" | "done" | "failed" | "partial";
+  // Phase G: "dispatching" added — the async worker has picked up a queued job.
+  status: "queued" | "dispatching" | "running" | "done" | "failed" | "partial";
   package: string;
   package_display: string;
   total_agents: number;
@@ -262,8 +263,9 @@ export interface DeployCreateResponse {
   job_id: number;
   package: string;
   total_agents: number;
-  dispatched: number;
-  skipped: number;
+  // Phase G: dispatched/skipped counts are no longer returned synchronously
+  // (the dispatch happens in a Celery task off the request thread). The UI
+  // polls /software/deploy/jobs/<id>/ for those — see DeployTab's polling.
   skipped_already_installed: string[];
   status: DeployJobSummary["status"];
 }

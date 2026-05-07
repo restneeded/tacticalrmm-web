@@ -114,6 +114,17 @@
           <q-icon name="group" size="18px" />
           {{ computedTargetCount }} agent{{ computedTargetCount === 1 ? '' : 's' }} selected
         </div>
+        <!-- Phase G: cache freshness indicator. -->
+        <div v-if="cacheFreshLabel" class="deploy-dialog__cache-fresh">
+          <q-icon name="cached" size="14px" aria-hidden="true" />
+          {{ cacheFreshLabel }}
+          <q-btn
+            flat dense no-caps size="sm" label="Refresh"
+            @click="refreshCacheNow"
+            class="deploy-dialog__refresh-btn"
+            :aria-label="'Refresh clients and sites cache'"
+          />
+        </div>
       </q-card-section>
 
       <q-card-section class="deploy-dialog__options">
@@ -151,6 +162,7 @@ import axios from "axios";
 import { useQuasar } from "quasar";
 
 import { useAuthStore } from "@/stores/auth";
+import { useClientsCacheStore } from "@/stores/clientsCache";
 import {
   createDeployJob,
   type CatalogPackage,
@@ -201,6 +213,18 @@ const filteredAgentOptions = ref<AgentRow[]>([]);
 
 interface SavedViewRow { id: string; name: string; agent_ids: string[] }
 const savedViewOptions = ref<SavedViewRow[]>([]);
+const cacheAge = ref<number>(-1);
+const cacheFreshLabel = computed(() => {
+  if (cacheAge.value < 0) return "";
+  if (cacheAge.value < 5) return "Fresh";
+  if (cacheAge.value < 60) return `Cached ${cacheAge.value}s ago`;
+  return `Cached ${Math.floor(cacheAge.value / 60)}m ago`;
+});
+async function refreshCacheNow() {
+  const cache = useClientsCacheStore();
+  await cache.refresh();
+  await loadPickerData();
+}
 
 function authConfig() {
   const auth = useAuthStore();
@@ -210,21 +234,24 @@ function authConfig() {
 
 async function loadPickerData() {
   try {
-    const [clients, sites, agents] = await Promise.all([
-      axios.get<Array<{ id: number; name: string }>>("/clients/", authConfig()),
-      axios.get<Array<{ id: number; name: string; client_name: string; client: number }>>(
-        "/clients/sites/",
-        authConfig(),
-      ),
+    // Phase G: clients + sites come from the 60s-TTL Pinia cache so re-
+    // opening the modal in a session doesn't re-fetch. Agent list is one-
+    // shot per dialog open since the fleet can change anytime an agent
+    // checks in. The freshness label below the picker tells admins how
+    // stale the client/site list is.
+    const cache = useClientsCacheStore();
+    await cache.ensureFresh();
+    const [agents] = await Promise.all([
       axios.get("/agents/?detail=false", authConfig()),
     ]);
-    clientOptions.value = clients.data.map((c) => ({ id: c.id, name: c.name }));
-    siteOptions.value = sites.data.map((s) => ({
+    clientOptions.value = cache.clients.map((c) => ({ id: c.id, name: c.name }));
+    siteOptions.value = cache.sites.map((s) => ({
       id: s.id,
       name: s.name,
       client_name: s.client_name,
       label: `${s.client_name} / ${s.name}`,
     }));
+    cacheAge.value = cache.ageSeconds;
     const data = Array.isArray(agents.data) ? agents.data : agents.data?.results || [];
     allAgents.value = data.map((a: { agent_id: string; hostname: string; site?: string; client?: string }) => ({
       agent_id: a.agent_id,

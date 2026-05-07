@@ -41,9 +41,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw } from "vue";
+import { computed, markRaw, onMounted } from "vue";
 
 import { useAuthStore } from "@/stores/auth";
+import { useDashboardLayoutStore } from "@/stores/dashboardLayout";
 
 import FleetStatusCard from "@/components/dashboard/FleetStatusCard.vue";
 import PendingAlertsCard from "@/components/dashboard/PendingAlertsCard.vue";
@@ -55,27 +56,39 @@ import VersionStatusCard from "@/components/dashboard/VersionStatusCard.vue";
 
 interface DashboardTile {
   id: string;
+  name: string;
+  icon: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   component: any;
   /** width in the 12-col grid: "wide" = 6, "medium" = 4. */
   size: "wide" | "medium";
 }
 
-// Order is the default layout. A future user-prefs feature can override this
-// by storing an alternate array; the contract for each tile (self-contained
-// fetch + loading + error + empty) is what makes that future change cheap.
-const tiles: DashboardTile[] = [
-  { id: "fleet",     component: markRaw(FleetStatusCard),    size: "wide" },
-  { id: "activity",  component: markRaw(ActivityFeedCard),   size: "wide" },
-  { id: "alerts",    component: markRaw(PendingAlertsCard),  size: "medium" },
-  { id: "pending",   component: markRaw(PendingActionsCard), size: "medium" },
-  { id: "clients",   component: markRaw(ClientsOverviewCard),size: "medium" },
-  { id: "cert",      component: markRaw(CertExpiryCard),     size: "medium" },
-  { id: "version",   component: markRaw(VersionStatusCard),  size: "medium" },
+// CANONICAL_TILES is the default layout. SettingsPage imports it to render
+// the tile catalog; the dashboardLayout store overlays user prefs on top.
+// Adding a new tile here = it appears (last) for every existing user.
+export const CANONICAL_TILES: DashboardTile[] = [
+  { id: "fleet",    name: "Fleet status",     icon: "computer",        component: markRaw(FleetStatusCard),    size: "wide" },
+  { id: "activity", name: "Recent activity",  icon: "history",         component: markRaw(ActivityFeedCard),   size: "wide" },
+  { id: "alerts",   name: "Pending alerts",   icon: "notifications",   component: markRaw(PendingAlertsCard),  size: "medium" },
+  { id: "pending",  name: "Pending actions",  icon: "pending_actions", component: markRaw(PendingActionsCard), size: "medium" },
+  { id: "clients",  name: "Clients overview", icon: "groups",          component: markRaw(ClientsOverviewCard),size: "medium" },
+  { id: "cert",     name: "Cert expiry",      icon: "shield",          component: markRaw(CertExpiryCard),     size: "medium" },
+  { id: "version",  name: "Version status",   icon: "info",            component: markRaw(VersionStatusCard),  size: "medium" },
 ];
 
 const auth = useAuthStore();
 const username = computed(() => auth.username || "");
+
+const layoutStore = useDashboardLayoutStore();
+onMounted(() => layoutStore.syncFromServer());
+
+const tiles = computed<DashboardTile[]>(() => {
+  const ids = layoutStore.resolveOrder(CANONICAL_TILES.map((t) => t.id));
+  return ids
+    .map((id) => CANONICAL_TILES.find((t) => t.id === id))
+    .filter(Boolean) as DashboardTile[];
+});
 </script>
 
 <style lang="scss" scoped>

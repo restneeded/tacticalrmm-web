@@ -42,27 +42,47 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase G: real reports area (replaces Phase A placeholder).
         path: "reports",
         name: "Reports",
-        component: () => import("@/views/phase-b-placeholders/PhaseBPlaceholder.vue"),
-        props: {
-          title: "Reports",
-          icon: "insights",
-          lede: "Fleet posture, software prevalence, patch lag, and exec-ready dashboards.",
-          phase: "Phase G",
-        },
+        component: () => import("@/pages/ReportsLandingPage.vue"),
         meta: { requireAuth: true },
       },
       {
+        path: "reports/patch-compliance",
+        name: "ReportPatchCompliance",
+        component: () => import("@/pages/reports/PatchComplianceReportPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "reports/software-inventory",
+        name: "ReportSoftwareInventory",
+        component: () => import("@/pages/reports/SoftwareInventoryReportPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "reports/outdated-apps",
+        name: "ReportOutdatedApps",
+        component: () => import("@/pages/reports/OutdatedAppsReportPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "reports/agent-coverage",
+        name: "ReportAgentCoverage",
+        component: () => import("@/pages/reports/AgentCoverageReportPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "reports/deploy-history",
+        name: "ReportDeployHistory",
+        component: () => import("@/pages/reports/DeployHistoryReportPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase G: real settings area (replaces Phase A placeholder).
         path: "settings",
         name: "Settings",
-        component: () => import("@/views/phase-b-placeholders/PhaseBPlaceholder.vue"),
-        props: {
-          title: "Settings",
-          icon: "settings",
-          lede: "Tenant settings, agents, scripts, integrations, SSO, alert policies, and theming.",
-          phase: "Phase H",
-        },
+        component: () => import("@/pages/SettingsPage.vue"),
         meta: { requireAuth: true },
       },
     ],
