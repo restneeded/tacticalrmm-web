@@ -44,6 +44,9 @@ const API_PATH_PREFIXES = [
   "logout",
   "logoutall",
   "natsws",
+  // Phase G — fork additions.
+  "reports",
+  "saved-views",
 ];
 
 // Phase D: SOME backend-prefixes double as SPA routes (notably "software").
@@ -54,7 +57,9 @@ const API_PATH_PREFIXES = [
 // SPA history-fallback render index.html. We use it on the conflicting
 // prefixes only — XHR requests (Accept: application/json or */*) still go
 // to the backend; full-page navigations (Accept: text/html) fall through.
-const SPA_ROUTE_PATHS = new Set(["software"]);
+// Phase G: /reports also doubles as an SPA route (compliance reports
+// area). saved-views does NOT — it's purely a backend prefix.
+const SPA_ROUTE_PATHS = new Set(["software", "reports"]);
 function bypassForSpa(req /*: http.IncomingMessage */) {
   const accept = (req.headers && req.headers.accept) || "";
   if (accept.includes("text/html")) return req.url; // serve SPA fallback

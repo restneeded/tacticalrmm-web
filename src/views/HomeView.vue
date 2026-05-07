@@ -41,41 +41,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted } from "vue";
+import { computed, onMounted } from "vue";
 
 import { useAuthStore } from "@/stores/auth";
 import { useDashboardLayoutStore } from "@/stores/dashboardLayout";
-
-import FleetStatusCard from "@/components/dashboard/FleetStatusCard.vue";
-import PendingAlertsCard from "@/components/dashboard/PendingAlertsCard.vue";
-import PendingActionsCard from "@/components/dashboard/PendingActionsCard.vue";
-import ActivityFeedCard from "@/components/dashboard/ActivityFeedCard.vue";
-import ClientsOverviewCard from "@/components/dashboard/ClientsOverviewCard.vue";
-import CertExpiryCard from "@/components/dashboard/CertExpiryCard.vue";
-import VersionStatusCard from "@/components/dashboard/VersionStatusCard.vue";
-
-interface DashboardTile {
-  id: string;
-  name: string;
-  icon: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  component: any;
-  /** width in the 12-col grid: "wide" = 6, "medium" = 4. */
-  size: "wide" | "medium";
-}
-
-// CANONICAL_TILES is the default layout. SettingsPage imports it to render
-// the tile catalog; the dashboardLayout store overlays user prefs on top.
-// Adding a new tile here = it appears (last) for every existing user.
-export const CANONICAL_TILES: DashboardTile[] = [
-  { id: "fleet",    name: "Fleet status",     icon: "computer",        component: markRaw(FleetStatusCard),    size: "wide" },
-  { id: "activity", name: "Recent activity",  icon: "history",         component: markRaw(ActivityFeedCard),   size: "wide" },
-  { id: "alerts",   name: "Pending alerts",   icon: "notifications",   component: markRaw(PendingAlertsCard),  size: "medium" },
-  { id: "pending",  name: "Pending actions",  icon: "pending_actions", component: markRaw(PendingActionsCard), size: "medium" },
-  { id: "clients",  name: "Clients overview", icon: "groups",          component: markRaw(ClientsOverviewCard),size: "medium" },
-  { id: "cert",     name: "Cert expiry",      icon: "shield",          component: markRaw(CertExpiryCard),     size: "medium" },
-  { id: "version",  name: "Version status",   icon: "info",            component: markRaw(VersionStatusCard),  size: "medium" },
-];
+import { CANONICAL_TILES, type DashboardTile } from "@/views/dashboardTiles";
 
 const auth = useAuthStore();
 const username = computed(() => auth.username || "");

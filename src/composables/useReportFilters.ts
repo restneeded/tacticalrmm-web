@@ -2,7 +2,7 @@
 // in-memory clients/sites cache, and a tiny "freshness" timestamp the bar
 // renders. Each report page calls this once.
 
-import { ref, watch } from "vue";
+import { ref } from "vue";
 
 import type { ReportFiltersInput } from "@/api/reports";
 import { useClientsCacheStore } from "@/stores/clientsCache";

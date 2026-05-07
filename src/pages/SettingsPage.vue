@@ -94,7 +94,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 
-import { CANONICAL_TILES } from "@/views/HomeView.vue";
+import { CANONICAL_TILES } from "@/views/dashboardTiles";
 import { useDashboardLayoutStore } from "@/stores/dashboardLayout";
 
 const layout = useDashboardLayoutStore();
