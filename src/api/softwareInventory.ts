@@ -198,3 +198,162 @@ export async function forceUpdateApp(id: number): Promise<ForceUpdateResponse> {
   );
   return r.data;
 }
+
+
+// ── Phase F — deploy + review queue helpers ────────────────────────────
+
+export interface CatalogPackage {
+  source: "choco" | "winget" | "wuauserv";
+  package_id: string;
+  display_name: string;
+  publisher: string;
+  homepage_url: string;
+  latest_version_known: string;
+  package_definition_id: number | null;
+}
+
+export interface DeployTarget {
+  agent_ids?: string[];
+  client_ids?: number[];
+  site_ids?: number[];
+}
+
+export interface DeployOptions {
+  pre_script_id?: number | null;
+  post_script_id?: number | null;
+  reboot_strategy?: "none" | "prompt" | "force";
+}
+
+export interface DeployJobSummary {
+  id: number;
+  kind: "deploy" | "auto-update";
+  status: "queued" | "running" | "done" | "failed" | "partial";
+  package: string;
+  package_display: string;
+  total_agents: number;
+  dispatched_count: number;
+  skipped_count: number;
+  succeeded_count: number;
+  failed_count: number;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface DeployJobAgentRow {
+  id: number;
+  agent_id: string;
+  hostname: string;
+  site: string;
+  client: string;
+  status: "pending" | "dispatched" | "skipped" | "succeeded" | "failed";
+  skip_reason: string;
+  output: string;
+  dispatched_at: string | null;
+  completed_at: string | null;
+}
+
+export interface DeployJobDetailResponse extends DeployJobSummary {
+  options: DeployOptions;
+  targets_snapshot: DeployTarget;
+  agents: DeployJobAgentRow[];
+}
+
+export interface DeployCreateResponse {
+  job_id: number;
+  package: string;
+  total_agents: number;
+  dispatched: number;
+  skipped: number;
+  skipped_already_installed: string[];
+  status: DeployJobSummary["status"];
+}
+
+export interface ReviewRow {
+  id: number;
+  status: "pending" | "matched" | "ignored";
+  notes: string;
+  app: { id: number; name: string; publisher: string; installation_count: number };
+  requested_by: string | null;
+  requested_at: string;
+  resolved_match: {
+    id: number;
+    source: string;
+    package_id: string;
+    display_name: string;
+  } | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+}
+
+export async function listCatalog(): Promise<{ count: number; results: CatalogPackage[] }> {
+  const r = await axios.get("/software/catalog/", authConfig());
+  return r.data;
+}
+
+export async function createDeployJob(payload: {
+  source: "choco" | "winget";
+  package_id: string;
+  display_name?: string;
+  publisher?: string;
+  targets: DeployTarget;
+  options?: DeployOptions;
+}): Promise<DeployCreateResponse> {
+  const r = await axios.post("/software/deploy/", payload, authConfig());
+  return r.data;
+}
+
+export async function listDeployJobs(): Promise<{ count: number; results: DeployJobSummary[] }> {
+  const r = await axios.get("/software/deploy/jobs/", authConfig());
+  return r.data;
+}
+
+export async function getDeployJob(id: number): Promise<DeployJobDetailResponse> {
+  const r = await axios.get(`/software/deploy/jobs/${id}/`, authConfig());
+  return r.data;
+}
+
+export async function requestReview(
+  appId: number,
+  notes = "",
+): Promise<{ id: number; status: string; created: boolean }> {
+  const r = await axios.post(
+    `/software/apps/${appId}/request-review/`,
+    { notes },
+    authConfig(),
+  );
+  return r.data;
+}
+
+export async function listReviews(
+  status: "pending" | "matched" | "ignored" | "all" = "pending",
+): Promise<{ count: number; results: ReviewRow[] }> {
+  const r = await axios.get(
+    `/software/review/?status=${encodeURIComponent(status)}`,
+    authConfig(),
+  );
+  return r.data;
+}
+
+export async function resolveReviewMatch(
+  id: number,
+  payload: {
+    source: "choco" | "winget";
+    package_id: string;
+    display_name?: string;
+    publisher?: string;
+  },
+): Promise<{ id: number; status: string }> {
+  const r = await axios.post(
+    `/software/review/${id}/match/`,
+    payload,
+    authConfig(),
+  );
+  return r.data;
+}
+
+export async function resolveReviewIgnore(
+  id: number,
+): Promise<{ id: number; status: string }> {
+  const r = await axios.post(`/software/review/${id}/ignore/`, {}, authConfig());
+  return r.data;
+}

@@ -64,6 +64,16 @@
         :label="`Managed (${summary?.managed_apps ?? 0})`"
         icon="verified"
       />
+      <q-tab
+        name="deploy"
+        label="Deploy"
+        icon="rocket_launch"
+      />
+      <q-tab
+        name="review"
+        :label="reviewBadgeLabel"
+        icon="rate_review"
+      />
     </q-tabs>
 
     <q-tab-panels v-model="activeTab" animated keep-alive class="phase-e-panels">
@@ -289,6 +299,15 @@
           </div>
         </q-card>
       </q-tab-panel>
+      <!-- ─── DEPLOY ───────────────────────────────────────────── -->
+      <q-tab-panel name="deploy" class="phase-e-panels__panel">
+        <DeployTab />
+      </q-tab-panel>
+
+      <!-- ─── REVIEW QUEUE ─────────────────────────────────────── -->
+      <q-tab-panel name="review" class="phase-e-panels__panel">
+        <ReviewQueue @resolved="onReviewResolved" />
+      </q-tab-panel>
     </q-tab-panels>
 
     <!-- ─── TAKE OVER MODAL ────────────────────────────────────── -->
@@ -310,7 +329,9 @@ import {
   forceUpdateApp,
   getInventorySummary,
   listInstalledApps,
+  listReviews,
   releaseApp,
+  requestReview as requestReviewApi,
   type InstalledAppDetail,
   type InstalledAppListRow,
   type InventorySummary,
@@ -322,6 +343,12 @@ const TakeOverDialog = defineAsyncComponent(
 const ComplianceCell = defineAsyncComponent(
   () => import("@/components/software/ComplianceCell.vue"),
 );
+const DeployTab = defineAsyncComponent(
+  () => import("@/components/software/DeployTab.vue"),
+);
+const ReviewQueue = defineAsyncComponent(
+  () => import("@/components/software/ReviewQueue.vue"),
+);
 
 const $q = useQuasar();
 
@@ -331,8 +358,14 @@ const summary = ref<InventorySummary | null>(null);
 const summaryLoading = ref(true);
 const summaryError = ref<string | null>(null);
 
+// Phase F — pending-review badge
+const pendingReviewCount = ref<number>(0);
+const reviewBadgeLabel = computed(() =>
+  pendingReviewCount.value > 0 ? `Review (${pendingReviewCount.value})` : "Review"
+);
+
 const search = ref("");
-const activeTab = ref<"discovery" | "managed">("discovery");
+const activeTab = ref<"discovery" | "managed" | "deploy" | "review">("discovery");
 const busyAppId = ref<number | null>(null);
 const takeOverApp = ref<InstalledAppListRow | null>(null);
 
@@ -461,15 +494,28 @@ function openTakeOver(row: InstalledAppListRow) {
   takeOverApp.value = row;
 }
 
-function requestReview(row: InstalledAppListRow) {
-  // Phase E: there's no curation backend yet — surface a friendly toast
-  // saying the request is queued (locally). Phase F may persist this.
-  $q.notify({
-    type: "info",
-    message: `Marked "${row.name}" for catalog review`,
-    caption: "We'll notify you when a Choco/WinGet match becomes available.",
-    timeout: 4000,
-  });
+async function requestReview(row: InstalledAppListRow) {
+  // Phase F: persist into UnmatchedAppReview so the curation queue picks it up.
+  try {
+    const r = await requestReviewApi(row.id, "");
+    pendingReviewCount.value = pendingReviewCount.value + (r.created ? 1 : 0);
+    $q.notify({
+      type: r.created ? "positive" : "info",
+      message: r.created
+        ? `Requested catalog review for "${row.name}"`
+        : `"${row.name}" is already in the review queue`,
+      caption: r.created
+        ? "An admin can resolve it under the Review tab."
+        : "",
+      timeout: 4000,
+    });
+  } catch (e) {
+    $q.notify({
+      type: "negative",
+      message: `Couldn't queue review: ${(e as Error).message}`,
+      timeout: 4000,
+    });
+  }
 }
 
 async function onForceUpdate(row: InstalledAppListRow) {
@@ -543,13 +589,32 @@ watch([search, discoveryFilter, discoverySort], () => {
 
 watch(activeTab, (tab) => {
   if (tab === "managed") loadManaged();
-  else loadDiscovery();
+  else if (tab === "discovery") loadDiscovery();
+  else if (tab === "review") loadPendingReviews();
 });
+
+async function loadPendingReviews() {
+  try {
+    const r = await listReviews("pending");
+    pendingReviewCount.value = r.count;
+  } catch {
+    // ignore — badge is just informational
+  }
+}
+
+function onReviewResolved() {
+  // refresh badge + summary (a match flips InstalledApp.package_match,
+  // bumping summary.managed_apps and the matched count on Discovery)
+  loadPendingReviews();
+  loadSummary();
+  loadDiscovery();
+}
 
 onMounted(() => {
   loadSummary();
   loadDiscovery();
   loadManaged();
+  loadPendingReviews();
 });
 </script>
 
