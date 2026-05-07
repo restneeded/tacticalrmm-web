@@ -23,15 +23,10 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase D: lightweight proof-of-life. Phase E adds Discovery + takeover UI.
         path: "software",
         name: "Software",
-        component: () => import("@/views/phase-b-placeholders/PhaseBPlaceholder.vue"),
-        props: {
-          title: "Software",
-          icon: "apps",
-          lede: "The killer feature: socket into apps already installed across your fleet, learn their version posture, and keep them aligned automatically.",
-          phase: "Phase D & E",
-        },
+        component: () => import("@/pages/SoftwareInventoryPage.vue"),
         meta: { requireAuth: true },
       },
       {

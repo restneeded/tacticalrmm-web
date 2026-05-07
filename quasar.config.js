@@ -46,19 +46,32 @@ const API_PATH_PREFIXES = [
   "natsws",
 ];
 
+// Phase D: SOME backend-prefixes double as SPA routes (notably "software").
+// A naive proxy entry like `/software/` intercepts BROWSER NAVIGATION too,
+// not just XHR/fetch — so reloading https://rmm-dev.bhsj.org/software gives
+// you a raw JSON 401 instead of the Vue SPA. Vite's http-proxy supports a
+// `bypass` hook that returns the original URL to skip proxying and let the
+// SPA history-fallback render index.html. We use it on the conflicting
+// prefixes only — XHR requests (Accept: application/json or */*) still go
+// to the backend; full-page navigations (Accept: text/html) fall through.
+const SPA_ROUTE_PATHS = new Set(["software"]);
+function bypassForSpa(req /*: http.IncomingMessage */) {
+  const accept = (req.headers && req.headers.accept) || "";
+  if (accept.includes("text/html")) return req.url; // serve SPA fallback
+  return null; // proxy as normal
+}
+
 const devProxy = {};
 for (const p of API_PATH_PREFIXES) {
-  devProxy[`/${p}/`] = {
+  const cfg = {
     target: API_PROXY_TARGET,
     changeOrigin: true,
     secure: true,
   };
+  if (SPA_ROUTE_PATHS.has(p)) cfg.bypass = bypassForSpa;
+  devProxy[`/${p}/`] = cfg;
   // bare path with no trailing slash (e.g. POST /logout)
-  devProxy[`/${p}`] = {
-    target: API_PROXY_TARGET,
-    changeOrigin: true,
-    secure: true,
-  };
+  devProxy[`/${p}`] = cfg;
 }
 // WebSocket proxy — Django channels on /ws/...
 devProxy["/ws"] = {
