@@ -19,13 +19,7 @@ const routes = [
       {
         path: "devices",
         name: "Devices",
-        component: () => import("@/views/phase-b-placeholders/PhaseBPlaceholder.vue"),
-        props: {
-          title: "Devices",
-          icon: "devices",
-          lede: "Inventory, health, scripts, and remote-control for every endpoint — re-built around the new shell.",
-          phase: "Phase C",
-        },
+        component: () => import("@/pages/DevicesPage.vue"),
         meta: { requireAuth: true },
       },
       {
