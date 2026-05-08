@@ -7,6 +7,11 @@
   bulk actions with reboot/shutdown/uninstall/recover-services/notify (all
   via the new async /agents/actions/bulk/ pattern that returns {job_id}),
   and shows a Recent Bulk Operations panel above the table.
+
+  Phase L: bulk run-script switches from the legacy BulkAction dialog to
+  the shared ScriptPickerModal (same modal the per-agent Run script flow
+  uses). The dispatch payload still goes through /agents/actions/bulk/
+  with mode=script — only the picker UI is new.
 -->
 <template>
   <q-page class="devices">
@@ -67,6 +72,15 @@
       v-model="drawerOpen"
       :agent="drawerAgent"
     />
+
+    <!-- Phase L: shared script picker, also used by per-agent flow. -->
+    <ScriptPickerModal
+      v-model="scriptPickerOpen"
+      context="bulk"
+      :bulk-count="store.selected.length"
+      :dispatching="bulkScriptDispatching"
+      @confirm="onBulkScriptConfirm"
+    />
   </q-page>
 </template>
 
@@ -76,6 +90,7 @@ import { useQuasar } from "quasar";
 
 import { useDevicesStore } from "@/stores/devices";
 import { dispatchBulkOp, type AgentRow, type BulkOp } from "@/api/devices";
+import { bulkRunScript as apiBulkRunScript } from "@/api/scripts";
 
 import DevicesFilterBar from "@/components/devices/DevicesFilterBar.vue";
 import DevicesTable from "@/components/devices/DevicesTable.vue";
@@ -83,6 +98,7 @@ import BulkActionBar from "@/components/devices/BulkActionBar.vue";
 import BulkOpsPanel from "@/components/devices/BulkOpsPanel.vue";
 import DetailDrawer from "@/components/devices/DetailDrawer.vue";
 import AgentInstallWizard from "@/components/devices/AgentInstallWizard.vue";
+import ScriptPickerModal, { type PickerSelection } from "@/components/scripts/ScriptPickerModal.vue";
 
 // Legacy bulk dialog, fully reused — same form the legacy DashboardView
 // has been driving for years. Phase C is the new chrome around it.
@@ -111,8 +127,54 @@ function openDetail(agent: AgentRow) {
 }
 
 // ── Bulk actions ───────────────────────────────────────────────────────────
-// Existing modes still go through the legacy BulkAction dialog.
-function bulkRunScript()    { $q.dialog({ component: BulkAction, componentProps: { mode: "script"  } }); }
+// Phase L: run-script now uses the shared ScriptPickerModal.
+// Run-command and scan-patches still go through the legacy BulkAction dialog
+// (Phase L only owns the script flow; commands/patches are out of scope).
+const scriptPickerOpen = ref(false);
+const bulkScriptDispatching = ref(false);
+
+function bulkRunScript() {
+  if (store.selected.length === 0) return;
+  scriptPickerOpen.value = true;
+}
+
+async function onBulkScriptConfirm(sel: PickerSelection) {
+  bulkScriptDispatching.value = true;
+  const ids = selectedAgentIds();
+  try {
+    const r = await apiBulkRunScript({
+      mode: "script",
+      target: "agents",
+      agents: ids,
+      monType: "all",
+      osType: "all",
+      script: sel.script.id,
+      args: sel.args,
+      env_vars: sel.env_vars,
+      timeout: sel.timeout,
+      run_as_user: sel.run_as_user,
+      custom_field: null,
+      collector_all_output: false,
+      save_to_agent_note: false,
+    });
+    const msg = (r && typeof r === "string") ? r : (r?.message || `${sel.script.name} dispatched to ${ids.length} agent(s).`);
+    $q.notify({ color: "positive", icon: "check_circle", message: msg });
+    scriptPickerOpen.value = false;
+    void opsPanelRef.value?.refresh?.();
+    store.clearSelection();
+  } catch (err) {
+    const detail =
+      (err as { response?: { data?: string | { detail?: string } } }).response?.data;
+    const msg =
+      typeof detail === "string"
+        ? detail
+        : detail?.detail ?? "Bulk run-script failed.";
+    $q.notify({ color: "negative", message: msg });
+  } finally {
+    bulkScriptDispatching.value = false;
+  }
+}
+
 function bulkRunCommand()   { $q.dialog({ component: BulkAction, componentProps: { mode: "command" } }); }
 function bulkScanPatches()  { $q.dialog({ component: BulkAction, componentProps: { mode: "patch"   } }); }
 

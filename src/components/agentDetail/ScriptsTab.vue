@@ -1,22 +1,26 @@
 <!--
-  ScriptsTab — read-only script execution history.
+  ScriptsTab — script execution history + (Phase L) Run-script button.
 
   Source: GET /agents/<id>/history/  filtered to type === "script_run".
-  This is the same endpoint the History tab uses; we render a more
-  script-focused view with the script name, who started it, and the
-  exit-code/output preview, with a click-through drawer for full
-  output.
 
-  Phase J intentionally does NOT add a "Run script" button here; the
-  full script-library + run flow ships in Phase L. When that lands the
-  bar's left side gains the dispatch button — the table itself stays.
+  Phase L: the bar's left side gains the "Run script" entry point that
+  Phase J intentionally deferred. Tapping it opens the shared
+  ScriptPickerModal, which on confirm dispatches /agents/<id>/runscript/
+  and refreshes the history table.
 -->
 <template>
   <div class="ad-tab">
     <header class="ad-tab__bar">
-      <div class="ad-tab__hint">
-        Read-only for Phase J. Run-script flow ships with the script
-        library rebuild (Phase L).
+      <q-btn
+        unelevated
+        no-caps
+        color="primary"
+        icon="play_arrow"
+        label="Run script"
+        @click="pickerOpen = true"
+      />
+      <div class="ad-tab__hint" v-if="lastDispatch">
+        Last dispatch: <b>{{ lastDispatch.scriptName }}</b> · {{ lastDispatch.relTime }}
       </div>
       <q-space />
       <q-input
@@ -83,34 +87,33 @@
       </div>
     </div>
 
-    <q-dialog v-model="drawerOpen" position="right" maximized>
-      <div class="drawer">
-        <header class="drawer__head">
-          <h3>{{ activeRow?.script_name || "Script run" }}</h3>
-          <q-space />
-          <q-btn flat dense round icon="close" @click="drawerOpen = false" />
-        </header>
-        <dl class="drawer__meta" v-if="activeRow">
-          <div><dt>When</dt><dd>{{ formatDate(activeRow.time) }}</dd></div>
-          <div><dt>By</dt><dd>{{ activeRow.username || "system" }}</dd></div>
-          <div><dt>Exit code</dt><dd>{{ exitLabel(activeRow) }}</dd></div>
-        </dl>
-        <section v-if="stdoutText" class="drawer__section">
-          <h4>stdout</h4>
-          <pre>{{ stdoutText }}</pre>
-        </section>
-        <section v-if="stderrText" class="drawer__section">
-          <h4>stderr</h4>
-          <pre>{{ stderrText }}</pre>
-        </section>
-      </div>
-    </q-dialog>
+    <RunOutputDrawer
+      v-model="drawerOpen"
+      :title="activeRow?.script_name || 'Script run'"
+      :meta="activeMeta"
+      :stdout="activeRow?.script_results?.stdout || ''"
+      :stderr="activeRow?.script_results?.stderr || ''"
+      :exit-code="activeRow?.script_results?.retcode"
+    />
+
+    <!-- Phase L: shared script picker. -->
+    <ScriptPickerModal
+      v-model="pickerOpen"
+      context="agent"
+      :agent-label="agentId"
+      :dispatching="dispatching"
+      @confirm="onPickerConfirm"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { useQuasar } from "quasar";
 import { fetchAgentHistory } from "@/api/agents";
+import { runScriptOnAgent } from "@/api/scripts";
+import RunOutputDrawer  from "@/components/scripts/RunOutputDrawer.vue";
+import ScriptPickerModal, { type PickerSelection } from "@/components/scripts/ScriptPickerModal.vue";
 
 interface HistoryRow {
   id: number;
@@ -125,6 +128,8 @@ interface HistoryRow {
 
 const props = defineProps<{ agentId: string }>();
 
+const $q = useQuasar();
+
 const rows = ref<HistoryRow[]>([]);
 const loading = ref(true);
 const errorMsg = ref("");
@@ -133,7 +138,13 @@ const page = ref(1);
 const pageSize = 50;
 
 const drawerOpen = ref(false);
-const activeRow = ref<HistoryRow | null>(null);
+const activeRow  = ref<HistoryRow | null>(null);
+
+const pickerOpen  = ref(false);
+const dispatching = ref(false);
+const lastDispatch = ref<{ scriptName: string; relTime: string; at: number } | null>(null);
+
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 async function load() {
   if (!props.agentId) return;
@@ -166,8 +177,14 @@ function openRow(r: HistoryRow) {
   drawerOpen.value = true;
 }
 
-const stdoutText = computed<string>(() => activeRow.value?.script_results?.stdout ?? "");
-const stderrText = computed<string>(() => activeRow.value?.script_results?.stderr ?? "");
+const activeMeta = computed(() => {
+  const r = activeRow.value; if (!r) return [];
+  return [
+    { k: "When", v: formatDate(r.time) },
+    { k: "By",   v: r.username || "system" },
+    { k: "Exit", v: exitLabel(r) },
+  ];
+});
 
 function exitLabel(r: HistoryRow): string {
   const code = r.script_results?.retcode;
@@ -186,8 +203,9 @@ function preview(r: HistoryRow): string {
 }
 
 function extractMessage(err: unknown): string {
-  const e = err as { response?: { data?: { detail?: string } }; message?: string };
-  return e?.response?.data?.detail || e?.message || "request failed";
+  const e = err as { response?: { data?: { detail?: string } | string }; message?: string };
+  const d = typeof e?.response?.data === "string" ? e.response.data : e?.response?.data?.detail;
+  return d || e?.message || "request failed";
 }
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -195,9 +213,61 @@ function formatDate(iso: string | null): string {
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleString();
 }
+function relTime(at: number): string {
+  const sec = Math.floor((Date.now() - at) / 1000);
+  if (sec < 5)    return "just now";
+  if (sec < 60)   return `${sec}s ago`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  return `${Math.floor(sec / 3600)}h ago`;
+}
+
+async function onPickerConfirm(sel: PickerSelection) {
+  dispatching.value = true;
+  try {
+    await runScriptOnAgent(props.agentId, {
+      script: sel.script.id,
+      output: "wait",
+      args: sel.args,
+      env_vars: sel.env_vars,
+      timeout: sel.timeout,
+      run_as_user: sel.run_as_user,
+    });
+    pickerOpen.value = false;
+    lastDispatch.value = { scriptName: sel.script.name, relTime: relTime(Date.now()), at: Date.now() };
+    $q.notify({ type: "positive", message: `Dispatched "${sel.script.name}"`, position: "top" });
+    // Pull the new run into history. The run is synchronous-ish via NATS;
+    // give it a beat then refresh.
+    setTimeout(() => void load(), 1500);
+    // Light polling for the next 60s in case the run is slow.
+    if (pollTimer) clearInterval(pollTimer);
+    let ticks = 0;
+    pollTimer = setInterval(() => {
+      ticks += 1;
+      void load();
+      if (ticks >= 12 && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }, 5000);
+  } catch (err) {
+    $q.notify({ type: "negative", message: extractMessage(err), position: "top" });
+  } finally {
+    dispatching.value = false;
+  }
+}
+
+// keep the "x time ago" label fresh
+let labelTimer: ReturnType<typeof setInterval> | null = null;
+onMounted(() => {
+  void load();
+  labelTimer = setInterval(() => {
+    if (lastDispatch.value) lastDispatch.value.relTime = relTime(lastDispatch.value.at);
+  }, 30_000);
+});
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer);
+  if (labelTimer) clearInterval(labelTimer);
+});
 
 watch(() => props.agentId, load);
-onMounted(load);
 </script>
 
 <style lang="scss" scoped>
@@ -275,54 +345,6 @@ onMounted(load);
     color: var(--color-fg-secondary);
     background: var(--color-bg-page);
     border-top: 1px solid var(--color-border-subtle);
-  }
-}
-
-.drawer {
-  width: min(720px, 100vw);
-  height: 100%;
-  background: var(--color-bg-surface);
-  color: var(--color-fg-primary);
-  display: flex;
-  flex-direction: column;
-  padding: 16px 20px;
-  gap: 14px;
-
-  &__head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    h3 { margin: 0; font-size: 16px; font-weight: 600; }
-  }
-  &__meta {
-    margin: 0;
-    display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 4px 12px;
-    font-size: 12px;
-    div { display: contents; }
-    dt { color: var(--color-fg-secondary); margin: 0; }
-    dd { margin: 0; }
-  }
-  &__section {
-    h4 {
-      margin: 0 0 6px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--color-fg-secondary);
-      font-weight: 600;
-    }
-    pre {
-      margin: 0;
-      max-height: 50vh;
-      overflow: auto;
-      background: var(--color-bg-page);
-      border: 1px solid var(--color-border-subtle);
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 12px;
-    }
   }
 }
 </style>

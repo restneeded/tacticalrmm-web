@@ -55,6 +55,25 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase L: scripts library + editor + run history + scheduled.
+        path: "scripts",
+        name: "Scripts",
+        component: () => import("@/pages/ScriptsPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "scripts/new",
+        name: "ScriptNew",
+        component: () => import("@/pages/ScriptDetailPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "scripts/:id(\\d+)",
+        name: "ScriptDetail",
+        component: () => import("@/pages/ScriptDetailPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         // Phase G: real reports area (replaces Phase A placeholder).
         path: "reports",
         name: "Reports",
