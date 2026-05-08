@@ -69,6 +69,13 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase N: AutomatedTasks library + run history.
+        path: "tasks",
+        name: "Tasks",
+        component: () => import("@/pages/TasksPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         path: "scripts/new",
         name: "ScriptNew",
         component: () => import("@/pages/ScriptDetailPage.vue"),

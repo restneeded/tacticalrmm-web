@@ -15,8 +15,7 @@
     <div class="sched__notice">
       <q-icon name="info" size="18px" />
       <span>
-        Schedule editing isn't here yet — that's a Phase N deliverable. Click any
-        row to edit it in the legacy view.
+        The full editor lives in Tasks (the new home). Click any row to jump there.
       </span>
     </div>
 
@@ -37,7 +36,7 @@
     <div v-else-if="filtered.length === 0" class="sched__state">
       <q-icon name="schedule" size="32px" />
       <div>No scheduled tasks.</div>
-      <div class="sched__hint">Phase N will add the editor here.</div>
+      <div class="sched__hint">Use the Tasks page for full editing.</div>
     </div>
     <div v-else class="sched__table">
       <div class="sched__head">
@@ -53,7 +52,7 @@
         v-for="row in filtered"
         :key="row.id"
         class="sched__row"
-        @click="viewLegacy(row)"
+        @click="viewInTasks(row)"
       >
         <span class="sched__name" :title="row.name || ''">{{ row.name || "(unnamed)" }}</span>
         <span>{{ row.schedule || taskTypeLabel(row.task_type) }}</span>
@@ -66,8 +65,8 @@
         <span>{{ formatDate(row.task_result?.last_run) }}</span>
         <span>{{ formatDate(row.run_time_date) }}</span>
         <span>
-          <q-btn flat dense round icon="open_in_new" size="sm" @click.stop="viewLegacy(row)">
-            <q-tooltip>View in Tasks editor (legacy)</q-tooltip>
+          <q-btn flat dense round icon="open_in_new" size="sm" @click.stop="viewInTasks(row)">
+            <q-tooltip>Open in /tasks</q-tooltip>
           </q-btn>
         </span>
       </div>
@@ -122,20 +121,12 @@ const filtered = computed<TaskRow[]>(() => {
   });
 });
 
-function viewLegacy(row: TaskRow) {
-  // Phase N TODO: replace with new editor route. For now jump to the legacy
-  // agent's automation tab (tasks attached to a specific agent), or to the
-  // policy editor for policy-bound tasks. If neither, drop the user at the
-  // generic legacy dashboard.
-  if (row.agent) {
-    void router.push({ path: `/legacy/agents/${row.agent}` });
-    return;
-  }
-  if (row.policy) {
-    void router.push({ path: `/legacy`, query: { tab: "policies", policy: String(row.policy) } });
-    return;
-  }
-  void router.push({ path: "/legacy" });
+function viewInTasks(row: TaskRow) {
+  // Phase N: hand off to the new /tasks landing. The Library tab lists every
+  // task; we pass `?id=` so future polish can deep-link the editor drawer.
+  // For now this just lands the user at the right page — the row is one
+  // click away.
+  void router.push({ path: "/tasks", query: { id: String(row.id) } });
 }
 
 function taskTypeLabel(t: string): string {

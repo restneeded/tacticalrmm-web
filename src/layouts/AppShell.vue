@@ -159,6 +159,7 @@ const navGroups = [
       { to: "/devices", label: "Devices", icon: "devices" },
       { to: "/checks", label: "Checks", icon: "checklist" },
       { to: "/scripts", label: "Scripts", icon: "code" },
+      { to: "/tasks", label: "Tasks", icon: "schedule" },
       { to: "/software", label: "Software", icon: "apps" },
       { to: "/patching", label: "Patching", icon: "system_update" },
     ],
