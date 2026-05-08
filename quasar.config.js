@@ -38,6 +38,10 @@ const API_PATH_PREFIXES = [
   "alerts",
   "accounts",
   "v2",
+  // Phase T4: must come BEFORE "api" so the bare-path proxy entry
+  // for /api doesn't capture /api-keys (Express prefix matching).
+  // Paired with SPA_ROUTE_PATHS so HTML navigations fall through to SPA.
+  "api-keys",
   "api",
   "reporting",
   "_allauth",
@@ -59,7 +63,7 @@ const API_PATH_PREFIXES = [
 // to the backend; full-page navigations (Accept: text/html) fall through.
 // Phase G: /reports also doubles as an SPA route (compliance reports
 // area). saved-views does NOT — it's purely a backend prefix.
-const SPA_ROUTE_PATHS = new Set(["software", "reports", "clients", "scripts", "checks", "tasks", "policies", "alerts", "patching", "audit", "pending", "diagnostics"]);
+const SPA_ROUTE_PATHS = new Set(["software", "reports", "clients", "scripts", "checks", "tasks", "policies", "alerts", "patching", "audit", "pending", "diagnostics", "api-keys"]);
 function bypassForSpa(req /*: http.IncomingMessage */) {
   const accept = (req.headers && req.headers.accept) || "";
   if (accept.includes("text/html")) return req.url; // serve SPA fallback

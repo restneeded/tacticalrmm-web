@@ -168,6 +168,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { fetchChecks } from "@/api/checks";
+import PolicyChip from "@/components/policies/PolicyChip.vue";
 
 const TYPE_LABELS = {
   diskspace: "Disk space",

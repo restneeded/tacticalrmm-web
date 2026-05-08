@@ -25,15 +25,15 @@
         <div>
           <dt>Cert</dt>
           <dd>
-            <span v-if="health.core.cert.error" class="card__pill" data-kind="warn">
-              N/A — {{ health.core.cert.error }}
+            <span v-if="certError" class="card__pill" data-kind="warn" :title="certError">
+              N/A
             </span>
-            <template v-else-if="health.core.cert.days_until_expiry !== null">
+            <template v-else-if="certDaysRemaining !== null">
               <span
                 class="card__pill"
                 :data-kind="certTone"
               >
-                {{ health.core.cert.expired ? "expired" : `${health.core.cert.days_until_expiry}d remaining` }}
+                {{ health.core?.cert?.expired ? "expired" : `${certDaysRemaining}d remaining` }}
               </span>
             </template>
             <span v-else class="card__muted">—</span>
@@ -84,10 +84,22 @@ const updateAvailable = computed(() => {
   );
 });
 
+// Phase T4: defensive optional chaining around `cert` so a short/empty
+// cert object from /core/health/ (e.g. when ALLOWED_HOSTS isn't a FQDN
+// in dev mode and get_certs() raises IndexError) renders as "N/A" with
+// the raw error tucked into a tooltip — no template crash, no ugly
+// "list index out of range" string in the page body.
+const certError = computed<string | null>(
+  () => props.health?.core?.cert?.error ?? null,
+);
+const certDaysRemaining = computed<number | null>(
+  () => props.health?.core?.cert?.days_until_expiry ?? null,
+);
+
 const certTone = computed<"warn" | "neg" | "ok">(() => {
-  const days = props.health?.core.cert.days_until_expiry ?? null;
+  const days = certDaysRemaining.value;
   if (days === null) return "ok";
-  if (props.health?.core.cert.expired) return "neg";
+  if (props.health?.core?.cert?.expired) return "neg";
   if (days < 14) return "warn";
   return "ok";
 });

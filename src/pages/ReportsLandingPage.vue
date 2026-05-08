@@ -19,7 +19,7 @@
     </q-banner>
 
     <div v-if="loading" class="reports-landing__skeleton">
-      <q-skeleton v-for="i in 5" :key="i" type="QCard" class="reports-landing__skel-card" />
+      <q-skeleton v-for="i in 5" :key="i" type="rect" class="reports-landing__skel-card" />
     </div>
 
     <div v-else class="reports-landing__grid" role="list">

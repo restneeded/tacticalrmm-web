@@ -86,7 +86,17 @@ export default function ({ app, router }) {
           text = error.response.data.non_field_errors[0];
         } else {
           if (typeof error.response.data === "string") {
-            text = error.response.data;
+            // Phase T4: Django (DEBUG=True) emits a full HTML 404 page when a
+            // detail-page URL like /devices/<bad-id> hits the API instead of
+            // a DRF view. Dumping that HTML string into the Notify toast
+            // produced a "raw Django 404 overlay" effect. Fall back to the
+            // status line and let the page handle the in-page error itself.
+            const body = error.response.data;
+            if (body.trimStart().startsWith("<")) {
+              text = "";
+            } else {
+              text = body;
+            }
           } else if (typeof error.response.data === "object") {
             let [key, value] = Object.entries(error.response.data)[0];
             text = key + ": " + value[0];
