@@ -47,7 +47,7 @@
           color="primary"
           unelevated
           icon-right="open_in_new"
-          :to="`/legacy/agents/${agent.agent_id}`"
+          :to="`/devices/${agent.agent_id}`"
           target="_self"
           label="Open full agent page"
         />

@@ -29,6 +29,13 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase J: Agent Detail page (replaces /legacy/agents/:agent_id).
+        path: "devices/:agent_id",
+        name: "DeviceDetail",
+        component: () => import("@/pages/AgentDetailPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         // Phase D: lightweight proof-of-life. Phase E adds Discovery + takeover UI.
         path: "software",
         name: "Software",
