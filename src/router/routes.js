@@ -125,6 +125,27 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase R: read-only audit log surface.
+        path: "audit",
+        name: "Audit",
+        component: () => import("@/pages/AuditPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase R: TRMM pending actions queue with live polling.
+        path: "pending",
+        name: "PendingActions",
+        component: () => import("@/pages/PendingActionsPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase R: system health and debug surfaces.
+        path: "diagnostics",
+        name: "Diagnostics",
+        component: () => import("@/pages/DiagnosticsPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         // Phase G: real reports area (replaces Phase A placeholder).
         path: "reports",
         name: "Reports",

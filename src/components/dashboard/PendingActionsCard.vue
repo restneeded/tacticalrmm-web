@@ -5,7 +5,7 @@
     icon="hourglass_top"
     :loading="loading"
     :error="error"
-    :to="{ path: '/legacy' }"
+    :to="{ path: '/pending' }"
     :accent="accent"
     aria-label="Pending agent actions"
   >

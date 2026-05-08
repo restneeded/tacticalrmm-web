@@ -1,0 +1,121 @@
+// Phase R — shared chrome for the four diagnostics cards.
+// Lives next to the cards so each can `@import "./_diag-card";` in its
+// scoped <style> block.
+.card {
+  background: var(--color-bg-surface-1);
+  border: 1px solid var(--color-stroke-divider);
+  border-radius: var(--intune-radius-medium);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+
+  &__head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+  }
+  &__icon { color: var(--color-fg-secondary); }
+  &__title {
+    margin: 0;
+    font-size: var(--intune-font-size-400);
+    font-weight: var(--intune-font-weight-semibold);
+    color: var(--color-fg-primary);
+  }
+  &__subhead {
+    margin: 14px 0 6px 0;
+    font-size: var(--intune-font-size-200);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-fg-tertiary);
+  }
+  &__placeholder {
+    color: var(--color-fg-tertiary);
+    padding: 24px 0;
+    text-align: center;
+  }
+  &__body { display: flex; flex-direction: column; gap: 4px; }
+  &__meta {
+    display: grid; grid-template-columns: 110px 1fr; gap: 4px 16px;
+    margin: 0;
+    dt { color: var(--color-fg-tertiary); font-size: var(--intune-font-size-200); }
+    dd {
+      margin: 0;
+      color: var(--color-fg-primary);
+      font-size: var(--intune-font-size-300);
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+  }
+  &__stats {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+    li {
+      font-size: var(--intune-font-size-300);
+      color: var(--color-fg-secondary);
+      span {
+        color: var(--color-fg-primary);
+        font-weight: var(--intune-font-weight-semibold);
+        margin-right: 4px;
+      }
+      a {
+        color: var(--color-fg-secondary);
+        text-decoration: none;
+        &:hover { text-decoration: underline; }
+        span { color: var(--color-fg-link, #2667c6); }
+      }
+    }
+  }
+  &__pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: var(--intune-radius-circular);
+    font-size: var(--intune-font-size-200);
+    border: 1px solid var(--color-stroke-divider);
+    background: var(--color-bg-surface-2);
+    color: var(--color-fg-secondary);
+    &[data-kind="ok"]   { background: rgba( 16,160, 96, 0.14); color: #1c7a4d; border-color: rgba(16,160, 96, 0.4); }
+    &[data-kind="warn"] { background: rgba(255,170, 68, 0.16); color: #b56b00; border-color: rgba(255,170, 68, 0.4); }
+    &[data-kind="neg"]  { background: rgba(232, 68, 86, 0.14); color: #b32d3d; border-color: rgba(232, 68, 86, 0.4); }
+    &[data-kind="info"] { background: rgba( 32,128,232, 0.12); color: #1f5fbb; border-color: rgba(32,128,232, 0.4); }
+  }
+  &__muted { color: var(--color-fg-tertiary); }
+
+  &__row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--color-stroke-divider);
+    font-size: var(--intune-font-size-300);
+    &:last-child { border-bottom: none; }
+    &-name { color: var(--color-fg-primary); }
+    &-value { color: var(--color-fg-secondary); }
+  }
+  &__bar {
+    display: flex; height: 8px; border-radius: 4px;
+    overflow: hidden;
+    background: var(--color-bg-surface-2);
+    border: 1px solid var(--color-stroke-divider);
+    margin: 6px 0 8px;
+  }
+  &__bar-seg {
+    height: 100%;
+  }
+  &__legend {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px;
+    li {
+      font-size: var(--intune-font-size-200);
+      color: var(--color-fg-secondary);
+      display: flex; align-items: center; gap: 6px;
+      &::before {
+        content: "";
+        width: 10px; height: 10px; border-radius: 2px;
+        background: var(--seg-color, var(--color-fg-tertiary));
+      }
+      span {
+        margin-left: auto;
+        color: var(--color-fg-primary);
+        font-weight: var(--intune-font-weight-semibold);
+      }
+    }
+  }
+}

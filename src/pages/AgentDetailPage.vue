@@ -123,15 +123,16 @@
         align="left"
         class="agent-detail__tabstrip"
       >
-        <q-tab name="overview"   label="Overview" />
-        <q-tab name="checks"     label="Checks" />
-        <q-tab name="hardware"   label="Hardware" />
-        <q-tab name="software"   label="Software" />
-        <q-tab name="scripts"    label="Scripts" />
-        <q-tab name="automation" label="Automation" />
-        <q-tab name="patches"    label="Patches" />
-        <q-tab name="history"    label="History" />
-        <q-tab name="notes"      label="Notes" />
+        <q-tab name="overview"    label="Overview" />
+        <q-tab name="checks"      label="Checks" />
+        <q-tab name="hardware"    label="Hardware" />
+        <q-tab name="software"    label="Software" />
+        <q-tab name="scripts"     label="Scripts" />
+        <q-tab name="automation"  label="Automation" />
+        <q-tab name="patches"     label="Patches" />
+        <q-tab name="history"     label="History" />
+        <q-tab name="notes"       label="Notes" />
+        <q-tab name="diagnostics" label="Diagnostics" />
       </q-tabs>
 
       <q-tab-panels
@@ -167,6 +168,9 @@
         <q-tab-panel name="notes">
           <NotesTab :agent-id="agentId" />
         </q-tab-panel>
+        <q-tab-panel name="diagnostics">
+          <DiagnosticsTab :agent-id="agentId" />
+        </q-tab-panel>
       </q-tab-panels>
     </section>
   </div>
@@ -186,6 +190,7 @@ import AutomationTab from "@/components/agentDetail/AutomationTab.vue";
 import PatchesTab    from "@/components/agentDetail/PatchesTab.vue";
 import HistoryTab    from "@/components/agentDetail/HistoryTab.vue";
 import NotesTab      from "@/components/agentDetail/NotesTab.vue";
+import DiagnosticsTab from "@/components/agentDetail/DiagnosticsTab.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -203,6 +208,7 @@ const TAB_NAMES = [
   "patches",
   "history",
   "notes",
+  "diagnostics",
 ] as const;
 type TabName = (typeof TAB_NAMES)[number];
 

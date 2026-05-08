@@ -94,6 +94,9 @@
               <q-item-section v-if="!miniSidebar && item.badgeKey === 'alertCount' && alertCount > 0" side>
                 <q-badge color="negative" :label="alertCount" />
               </q-item-section>
+              <q-item-section v-if="!miniSidebar && item.badgeKey === 'pendingCount' && pendingCount > 0" side>
+                <q-badge color="primary" :label="pendingCount" />
+              </q-item-section>
               <q-tooltip
                 v-if="miniSidebar"
                 anchor="center right"
@@ -136,9 +139,11 @@
 import { ref, computed } from "vue";
 import { useThemeStore } from "@/stores/theme";
 import { useAlertCount }  from "@/composables/useAlertCount";
+import { usePendingCount } from "@/composables/usePendingCount";
 
 const theme = useThemeStore();
-const { count: alertCount } = useAlertCount();
+const { count: alertCount }   = useAlertCount();
+const { count: pendingCount } = usePendingCount();
 
 const leftDrawerOpen = ref(true);
 const miniSidebar = ref(false);
@@ -169,6 +174,14 @@ const navGroups = [
       { to: "/alerts",   label: "Alerts",   icon: "notifications_active", badgeKey: "alertCount" },
       { to: "/software", label: "Software", icon: "apps" },
       { to: "/patching", label: "Patching", icon: "system_update" },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { to: "/audit",       label: "Audit",       icon: "fact_check" },
+      { to: "/pending",     label: "Pending",     icon: "hourglass_top",   badgeKey: "pendingCount" },
+      { to: "/diagnostics", label: "Diagnostics", icon: "monitor_heart" },
     ],
   },
   {

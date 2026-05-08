@@ -8,6 +8,7 @@
     icon="history"
     :loading="loading"
     :error="error"
+    to="/audit"
     aria-label="Recent agent activity"
   >
     <ul v-if="rows.length" class="feed">
