@@ -3,6 +3,11 @@
   Hero header + filter strip + UsersTable + add/edit drawer + detail drawer.
   Reuses Phase I drawer chrome and the fetchUsers/saveUser/editUser/removeUser
   api wrappers in @/api/accounts.
+
+  Phase T7 — accept ?openSelf=1 from the topbar Profile menu and auto-open
+  the UserDetailDrawer for the signed-in user once the row list has loaded.
+  Drawer-only is the Phase S precedent; we deliberately do not add a
+  /users/:id route.
 -->
 <template>
   <q-page class="users">
@@ -62,10 +67,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useQuasar } from "quasar";
+import { useRoute, useRouter } from "vue-router";
 
 import { useUsersStore, type UserRow } from "@/stores/users";
+import { useAuthStore } from "@/stores/auth";
 import { notifySuccess } from "@/utils/notify";
 
 import UsersTable from "@/components/users/UsersTable.vue";
@@ -73,9 +80,15 @@ import UserFormDrawer from "@/components/users/UserFormDrawer.vue";
 import UserDetailDrawer from "@/components/users/UserDetailDrawer.vue";
 
 const store = useUsersStore();
+const auth = useAuthStore();
 const $q = useQuasar();
+const route = useRoute();
+const router = useRouter();
 
-onMounted(() => store.load());
+onMounted(async () => {
+  await store.load();
+  maybeOpenSelf();
+});
 
 const detailOpen = ref(false);
 const detailUser = ref<UserRow | null>(null);
@@ -126,6 +139,30 @@ function onSaved() {
       store.rows.find((r) => r.id === detailUser.value!.id) ?? null;
   }
 }
+
+// Phase T7 — option (b): topbar Profile lands here with ?openSelf=1.
+// Quasar's q-drawer with `overlay` auto-closes on route changes, so we strip
+// the query param FIRST (await), then set detailOpen — otherwise the drawer
+// flickers open and immediately closes when the replace navigates.
+async function maybeOpenSelf() {
+  if (route.query.openSelf !== "1") return;
+  const username = String(auth.username ?? "");
+  if (!username) return;
+  const me = store.rows.find((r) => r.username === username);
+  if (!me) {
+    await router.replace({ path: "/users", query: {} });
+    return;
+  }
+  await router.replace({ path: "/users", query: {} });
+  detailUser.value = me;
+  detailOpen.value = true;
+}
+
+// If the user navigates BACK to /users with the flag set without a remount
+// (Vue keeps the page component alive across query-only changes), still react.
+watch(() => route.query.openSelf, (v) => {
+  if (v === "1" && store.rows.length > 0) maybeOpenSelf();
+});
 </script>
 
 <style lang="scss" scoped>

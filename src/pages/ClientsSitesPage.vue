@@ -10,6 +10,12 @@
     (and Add Site, on a client row).
   Endpoints, dialog components and the AgentInstallWizard are reused —
   no new backend routes were added.
+
+  Phase T7 — clients and sites have first-class detail pages now
+  (/clients/:id, /sites/:id). Row-click and client-name-cell click
+  navigate to those pages, matching the Phase J agent-row precedent.
+  The previous SiteDetailDrawer "peek" is no longer the row-click target;
+  Edit / Delete remain available via the right-click context menu.
 -->
 <template>
   <q-page class="cspg">
@@ -70,8 +76,8 @@
 
     <ClientsSitesTable
       @open-detail="openDetail"
-      @open-client="openEditClient"
-      @open-client-by-id="openEditClientById"
+      @open-client="openClient"
+      @open-client-by-id="openClientById"
       @row-context="onRowContext"
     />
 
@@ -94,12 +100,6 @@
       @run-checks="ctxRow && onRowRunChecks(ctxScope, ctxRow)"
     />
 
-    <SiteDetailDrawer
-      v-model="detailOpen"
-      :row="detailRow"
-      @edit="onEditFromDetail"
-      @delete="onDeleteFromDetail"
-    />
     <ClientFormDrawer
       v-model="clientDrawerOpen"
       :client="clientDrawerSubject"
@@ -117,6 +117,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { openURL, useQuasar } from "quasar";
+import { useRouter } from "vue-router";
 
 import { useClientsSitesStore, type GroupedClientRow } from "@/stores/clientsSites";
 import { fetchClient, fetchSite, removeSite, removeClient } from "@/api/clients";
@@ -124,7 +125,6 @@ import { notifySuccess } from "@/utils/notify";
 
 import ClientsSitesFilterBar from "@/components/clientsSites/ClientsSitesFilterBar.vue";
 import ClientsSitesTable from "@/components/clientsSites/ClientsSitesTable.vue";
-import SiteDetailDrawer from "@/components/clientsSites/SiteDetailDrawer.vue";
 import ClientFormDrawer from "@/components/clientsSites/ClientFormDrawer.vue";
 import SiteFormDrawer from "@/components/clientsSites/SiteFormDrawer.vue";
 import RowContextMenu from "@/components/clientsSites/RowContextMenu.vue";
@@ -152,33 +152,31 @@ import type { SiteRow } from "@/components/clientsSites/columns";
 type AnyRow = SiteRow | GroupedClientRow;
 
 const $q = useQuasar();
+const router = useRouter();
 const store = useClientsSitesStore();
 
 onMounted(() => store.load());
 
-// ── Detail drawer ─────────────────────────────────────────────────────────
-const detailOpen = ref(false);
-const detailRow = ref<SiteRow | null>(null);
+// ── Phase T7: row-click navigation to detail pages ────────────────────────
+// Site row-click (dblclick from the table) → /sites/:id
+// Client name cell click → /clients/:id
+// Edit/Delete remain available via the right-click context menu.
 function openDetail(row: SiteRow) {
-  detailRow.value = row;
-  detailOpen.value = true;
+  void router.push({ name: "SiteDetail", params: { id: row.site_id } });
+}
+function openClient(row: SiteRow) {
+  void router.push({ name: "ClientDetail", params: { id: row.client_id } });
+}
+function openClientById(id: number) {
+  void router.push({ name: "ClientDetail", params: { id } });
 }
 
-// ── Client edit drawer ────────────────────────────────────────────────────
+// ── Client edit drawer (Add only; Edit-on-click moved to detail nav) ──────
 const clientDrawerOpen = ref(false);
 const clientDrawerSubject = ref<{ id?: number; name: string } | null>(null);
 function openAddClient() {
   clientDrawerSubject.value = null;
   clientDrawerOpen.value = true;
-}
-function openEditClient(row: SiteRow) {
-  clientDrawerSubject.value = { id: row.client_id, name: row.client_name };
-  clientDrawerOpen.value = true;
-}
-function openEditClientById(id: number) {
-  const r = (store.rows as SiteRow[]).find((x) => x.client_id === id);
-  if (!r) return;
-  openEditClient(r);
 }
 
 // ── Site form drawer ──────────────────────────────────────────────────────
@@ -194,21 +192,6 @@ function onAddSiteFromClient(row: GroupedClientRow) {
   siteDrawerSubject.value = null;
   siteDrawerDefaultClient.value = row.client_id;
   siteDrawerOpen.value = true;
-}
-function onEditFromDetail() {
-  if (!detailRow.value) return;
-  siteDrawerSubject.value = {
-    id: detailRow.value.site_id,
-    client: detailRow.value.client_id,
-    name: detailRow.value.site_name,
-  };
-  siteDrawerOpen.value = true;
-  detailOpen.value = false;
-}
-async function onDeleteFromDetail() {
-  if (!detailRow.value) return;
-  await deleteSiteRow(detailRow.value);
-  detailOpen.value = false;
 }
 
 function onAfterWrite() {

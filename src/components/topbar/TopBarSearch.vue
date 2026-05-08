@@ -3,7 +3,8 @@
      - ⌘K / Ctrl+K to focus, Esc to clear+blur
      - Min 2 chars before showing results
      - Lazy-loads devices store + clientsCache on first focus
-     - Click navigates to detail (/devices/:agent_id) or list (/clients) -->
+     - Click navigates to detail (/devices/:agent_id, /clients/:id, /sites/:id).
+       Phase T7 wired clients/sites to their new detail pages. -->
 <template>
   <div class="topbar-search">
     <q-icon name="search" size="16px" class="topbar-search__icon" />
@@ -72,7 +73,7 @@
               :key="`c-${c.id}`"
               v-close-popup
               clickable
-              @click="goClient()"
+              @click="goClient(c)"
             >
               <q-item-section avatar>
                 <q-icon name="business" size="18px" />
@@ -89,7 +90,7 @@
               :key="`s-${s.id}`"
               v-close-popup
               clickable
-              @click="goSite()"
+              @click="goSite(s)"
             >
               <q-item-section avatar>
                 <q-icon name="apartment" size="18px" />
@@ -189,19 +190,18 @@ function goAgent(a: { agent_id: string }) {
   inputRef.value?.blur();
   void router.push(`/devices/${a.agent_id}`);
 }
-// Clients/sites have no per-entity detail page yet; route to the list page.
-// Phase T3 (clients context menu) will fold a navigable detail target in.
-function goClient() {
+// Phase T7: clients and sites now have detail pages — route there directly.
+function goClient(c: { id: number | string }) {
   query.value = "";
   menuOpen.value = false;
   inputRef.value?.blur();
-  void router.push("/clients");
+  void router.push(`/clients/${c.id}`);
 }
-function goSite() {
+function goSite(s: { id: number | string }) {
   query.value = "";
   menuOpen.value = false;
   inputRef.value?.blur();
-  void router.push("/clients");
+  void router.push(`/sites/${s.id}`);
 }
 
 function clearAndBlur() {

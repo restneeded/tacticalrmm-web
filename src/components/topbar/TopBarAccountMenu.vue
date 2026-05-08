@@ -1,6 +1,9 @@
 <!-- Phase T1 — topbar account menu.
      - Username + role badge (Superuser / User from /accounts/permissions/)
-     - Profile: deferred — /users has no per-user detail route yet (TODO Phase T2/T6)
+     - Profile (Phase T7): navigates to /users?openSelf=1 — UsersPage reads
+       the flag and auto-opens UserDetailDrawer for the signed-in account.
+       Drawer-only follows Phase S precedent; we deliberately did not add a
+       /users/:id route to keep Phase Z's surface minimal.
      - Theme: light / dark / system, persisted via existing theme store (localStorage key "trmm:theme")
      - Sign out: calls auth.logout() (POST /logout/, knox single-token revoke =
        "current session only"), clears token/username/name regardless of response,
@@ -31,6 +34,14 @@
         </q-item>
         <q-separator />
 
+        <q-item v-close-popup clickable @click="openProfile">
+          <q-item-section avatar>
+            <q-icon name="account_circle" size="18px" />
+          </q-item-section>
+          <q-item-section>Profile</q-item-section>
+        </q-item>
+
+        <q-separator />
         <q-item-label header>Theme</q-item-label>
         <q-item
           v-for="opt in themeOptions"
@@ -97,6 +108,13 @@ const themeOptions: { value: ThemeMode; label: string; icon: string }[] = [
 
 function setTheme(m: ThemeMode) {
   theme.setMode(m);
+}
+
+function openProfile() {
+  // Phase T7 (option b): navigate to /users with a flag the UsersPage reads
+  // post-load to auto-open the UserDetailDrawer for the signed-in user.
+  // Match by auth.username (the canonical user identifier).
+  void router.push({ path: "/users", query: { openSelf: "1" } });
 }
 
 async function signOut() {

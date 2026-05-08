@@ -23,6 +23,20 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase T7: Client detail page — Sites/Agents/Automation/Alerts.
+        path: "clients/:id(\\d+)",
+        name: "ClientDetail",
+        component: () => import("@/pages/ClientDetailPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase T7: Site detail page — Agents/Automation/Alerts.
+        path: "sites/:id(\\d+)",
+        name: "SiteDetail",
+        component: () => import("@/pages/SiteDetailPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         path: "devices",
         name: "Devices",
         component: () => import("@/pages/DevicesPage.vue"),
