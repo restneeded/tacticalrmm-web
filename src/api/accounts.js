@@ -108,3 +108,43 @@ export async function removeAPIKey(id) {
   const { data } = await axios.delete(`${baseUrl}/apikeys/${id}/`);
   return data;
 }
+
+// ── Phase S additions ────────────────────────────────────────────────────
+
+// user CRUD (admin-side; existing fetchUsers/resetPass/resetTwoFactor stay)
+export async function saveUser(payload) {
+  const { data } = await axios.post(`${baseUrl}/users/`, payload);
+  return data;
+}
+
+export async function editUser(id, payload) {
+  const { data } = await axios.put(`${baseUrl}/${id}/users/`, payload);
+  return data;
+}
+
+export async function removeUser(id) {
+  const { data } = await axios.delete(`${baseUrl}/${id}/users/`);
+  return data;
+}
+
+export async function fetchUserDetail(id) {
+  const { data } = await axios.get(`${baseUrl}/${id}/users/`);
+  return data;
+}
+
+// admin-side reset endpoints — UserActions accepts {id, password?}
+export async function adminResetUserPassword(id, password) {
+  const { data } = await axios.post(`${baseUrl}/users/reset/`, { id, password });
+  return data;
+}
+
+export async function adminResetUserTotp(id) {
+  const { data } = await axios.put(`${baseUrl}/users/reset_totp/`, { id });
+  return data;
+}
+
+// "what can I do?" — used by the Administration nav group
+export async function fetchCurrentUserPerms() {
+  const { data } = await axios.get(`${baseUrl}/permissions/`);
+  return data;
+}

@@ -73,12 +73,13 @@
     >
       <div class="app-shell__sidebar-inner">
         <q-list class="app-shell__nav">
-          <template v-for="group in navGroups" :key="group.label">
+          <!-- phase-s-nav-gate -->
+          <template v-for="group in visibleNavGroups" :key="group.label">
             <div v-if="!miniSidebar" class="app-shell__nav-group-label">
               {{ group.label }}
             </div>
             <q-item
-              v-for="item in group.items"
+              v-for="item in visibleItems(group)"
               :key="item.to"
               v-ripple
               clickable
@@ -157,6 +158,12 @@ const themeIcon = computed(() => {
 
 // Sidebar groups — Phase A scaffold. Phase B+ will add child pages and
 // peel functionality out of /legacy DashboardView.vue.
+import { onMounted } from "vue";
+import { useCurrentUserPermsStore } from "@/stores/permissions";
+
+const permsStore = useCurrentUserPermsStore();
+onMounted(() => { void permsStore.ensure(); });
+
 const navGroups = [
   {
     label: "Overview",
@@ -189,6 +196,15 @@ const navGroups = [
     items: [{ to: "/reports", label: "Reports", icon: "insights" }],
   },
   {
+    label: "Administration",
+    visibleKey: "canSeeAdminNav",
+    items: [
+      { to: "/users",    label: "Users",    icon: "people",       permKey: "can_list_accounts" },
+      { to: "/roles",    label: "Roles",    icon: "admin_panel_settings", permKey: "can_list_roles" },
+      { to: "/api-keys", label: "API keys", icon: "vpn_key",      permKey: "can_list_api_keys" },
+    ],
+  },
+  {
     label: "Configure",
     items: [
       { to: "/settings", label: "Settings", icon: "settings" },
@@ -196,6 +212,23 @@ const navGroups = [
     ],
   },
 ];
+
+
+// Phase S — gate Administration nav group + per-item visibility on
+// the current user's perms. Items without permKey are always visible.
+const visibleNavGroups = computed(() => {
+  return navGroups.filter((g) => {
+    if (!g.visibleKey) return true;
+    if (g.visibleKey === "canSeeAdminNav") return permsStore.canSeeAdminNav;
+    return true;
+  });
+});
+function visibleItems(group) {
+  return group.items.filter((item) => {
+    if (!item.permKey) return true;
+    return !!permsStore.perms[item.permKey];
+  });
+}
 </script>
 
 <style lang="scss">

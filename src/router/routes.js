@@ -146,6 +146,27 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase S: /users — local TRMM accounts CRUD + sessions + MFA admin.
+        path: "users",
+        name: "Users",
+        component: () => import("@/pages/UsersPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase S: /roles — RBAC permission matrix editor.
+        path: "roles",
+        name: "Roles",
+        component: () => import("@/pages/RolesPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase S: /api-keys — bearer keys for scripted integrations.
+        path: "api-keys",
+        name: "ApiKeys",
+        component: () => import("@/pages/ApiKeysPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         // Phase G: real reports area (replaces Phase A placeholder).
         path: "reports",
         name: "Reports",
