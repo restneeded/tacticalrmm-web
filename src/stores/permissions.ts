@@ -4,6 +4,10 @@
 // sidebar reads the `can_list_*` flags synchronously to gate the
 // Administration nav group. The endpoint is authenticated-only, so this
 // works for every signed-in user — even ones who can't manage anything.
+//
+// Phase T2 — extended with the perm flags the modern /settings page needs
+// to gate its sections (CoreSettings / CustomFields / URLActions). The
+// backend exposes these in the same /accounts/permissions/ payload.
 
 import { defineStore } from "pinia";
 import axios from "axios";
@@ -13,6 +17,12 @@ interface CurrentUserPerms {
   can_list_accounts: boolean;
   can_list_roles: boolean;
   can_list_api_keys: boolean;
+  // Phase T2
+  can_view_core_settings: boolean;
+  can_edit_core_settings: boolean;
+  can_view_customfields: boolean;
+  can_manage_customfields: boolean;
+  can_run_urlactions: boolean;
 }
 
 const ZERO: CurrentUserPerms = {
@@ -20,6 +30,11 @@ const ZERO: CurrentUserPerms = {
   can_list_accounts: false,
   can_list_roles: false,
   can_list_api_keys: false,
+  can_view_core_settings: false,
+  can_edit_core_settings: false,
+  can_view_customfields: false,
+  can_manage_customfields: false,
+  can_run_urlactions: false,
 };
 
 export const useCurrentUserPermsStore = defineStore("currentUserPerms", {
@@ -48,7 +63,7 @@ export const useCurrentUserPermsStore = defineStore("currentUserPerms", {
         const { data } = await axios.get<CurrentUserPerms>(
           "/accounts/permissions/",
         );
-        this.perms = data;
+        this.perms = { ...ZERO, ...data };
         this.loaded = true;
       } catch (e) {
         // Soft-fail: leave perms zeroed; the nav group simply won't render.

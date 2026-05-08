@@ -9,6 +9,7 @@ import type {
 } from "@/types/core/urlactions";
 
 import type { CoreSetting } from "@/types/core/settings";
+import type { CustomField } from "@/types/core/customfields";
 
 const baseUrl = "/core";
 
@@ -17,20 +18,53 @@ export async function fetchCoreSettings(params = {}): Promise<CoreSetting> {
   return data;
 }
 
+// Phase T2 — partial PUT of CoreSettings (the API serializer accepts a full
+// payload but is happy receiving any subset of mutable fields when paired
+// with `partial=True`-style updates upstream; the Django view itself does
+// `is_valid(raise_exception=True)` against a `CoreSettingsSerializer` bound
+// to an instance, which tolerates partials only if `partial=True`. The
+// existing FileBar flow PUTs the full settings object back; we mirror that
+// to stay safe across nested validators).
+export async function editCoreSettings(payload: Partial<CoreSetting>) {
+  const { data } = await axios.put(`${baseUrl}/settings/`, payload);
+  return data;
+}
+
+export async function sendTestEmail() {
+  const { data } = await axios.post(`${baseUrl}/emailtest/`);
+  return data;
+}
+
+export async function sendTestSMS() {
+  const { data } = await axios.post(`${baseUrl}/smstest/`);
+  return data;
+}
+
 export async function fetchDashboardInfo(params = {}) {
   const { data } = await axios.get(`${baseUrl}/dashinfo/`, { params: params });
   return data;
 }
 
-export async function fetchCustomFields(params = {}) {
-  try {
-    const { data } = await axios.get(`${baseUrl}/customfields/`, {
-      params: params,
-    });
-    return data;
-  } catch (e) {
-    console.error(e);
-  }
+export async function fetchCustomFields(params = {}): Promise<CustomField[]> {
+  const { data } = await axios.get(`${baseUrl}/customfields/`, {
+    params: params,
+  });
+  return data ?? [];
+}
+
+export async function saveCustomField(payload: Partial<CustomField>) {
+  const { data } = await axios.post(`${baseUrl}/customfields/`, payload);
+  return data;
+}
+
+export async function editCustomField(id: number, payload: Partial<CustomField>) {
+  const { data } = await axios.put(`${baseUrl}/customfields/${id}/`, payload);
+  return data;
+}
+
+export async function removeCustomField(id: number) {
+  const { data } = await axios.delete(`${baseUrl}/customfields/${id}/`);
+  return data;
 }
 
 export async function fetchURLActions(params = {}): Promise<URLAction[]> {
