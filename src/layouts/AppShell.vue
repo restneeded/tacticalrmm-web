@@ -155,6 +155,7 @@ const navGroups = [
   {
     label: "Manage",
     items: [
+      { to: "/clients", label: "Clients & Sites", icon: "business" },
       { to: "/devices", label: "Devices", icon: "devices" },
       { to: "/software", label: "Software", icon: "apps" },
       { to: "/patching", label: "Patching", icon: "system_update" },

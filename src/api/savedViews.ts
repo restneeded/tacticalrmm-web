@@ -22,7 +22,8 @@ export type SavedViewKind =
   | "devices"
   | "software-discovery"
   | "software-managed"
-  | "dashboard-layout";
+  | "dashboard-layout"
+  | "clients-sites";
 
 export interface SavedView {
   id: number;

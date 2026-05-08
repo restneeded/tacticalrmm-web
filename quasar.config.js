@@ -59,7 +59,7 @@ const API_PATH_PREFIXES = [
 // to the backend; full-page navigations (Accept: text/html) fall through.
 // Phase G: /reports also doubles as an SPA route (compliance reports
 // area). saved-views does NOT — it's purely a backend prefix.
-const SPA_ROUTE_PATHS = new Set(["software", "reports"]);
+const SPA_ROUTE_PATHS = new Set(["software", "reports", "clients"]);
 function bypassForSpa(req /*: http.IncomingMessage */) {
   const accept = (req.headers && req.headers.accept) || "";
   if (accept.includes("text/html")) return req.url; // serve SPA fallback
