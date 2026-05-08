@@ -139,3 +139,108 @@ export async function bulkAction(payload: BulkPayload): Promise<string> {
   const { data } = await axios.post<string>("/agents/actions/bulk/", payload, authConfig());
   return typeof data === "string" ? data : "";
 }
+
+
+// ── Phase K: bulk-op endpoints (reboot/shutdown/uninstall/recover-services/notify) ──
+// These reuse the same /agents/actions/bulk/ entrypoint with new modes.
+// The backend creates an AgentBulkOpJob row and returns {job_id, message}.
+export type BulkOp =
+  | "reboot"
+  | "shutdown"
+  | "uninstall"
+  | "recover-services"
+  | "notify";
+
+export interface BulkOpResponse {
+  job_id: number;
+  message: string;
+}
+
+export async function dispatchBulkOp(
+  op: BulkOp,
+  agent_ids: string[],
+  extra: { message?: string } = {},
+): Promise<BulkOpResponse> {
+  const payload: Record<string, unknown> = {
+    mode: op,
+    target: "agents",
+    agents: agent_ids,
+    monType: "all",
+    osType: "all",
+    ...(op === "notify" ? { message: extra.message ?? "" } : {}),
+  };
+  const { data } = await axios.post<BulkOpResponse>(
+    "/agents/actions/bulk/",
+    payload,
+    authConfig(),
+  );
+  return data;
+}
+
+export interface BulkOpJobRow {
+  id: number;
+  op: string;
+  status: "dispatching" | "running" | "done" | "partial" | "failed";
+  total_agents: number;
+  dispatched_count: number;
+  failed_count: number;
+  message: string;
+  options: Record<string, unknown>;
+  created_at: string;
+  finished_at: string | null;
+  created_by: string | null;
+}
+
+export async function fetchBulkOpJobs(limit = 25): Promise<BulkOpJobRow[]> {
+  const { data } = await axios.get<BulkOpJobRow[]>(
+    `/agents/bulk/jobs/?limit=${limit}`,
+    authConfig(),
+  );
+  return data;
+}
+
+// ── Phase K: install-agent installer endpoint ────────────────────────────────
+// Verified shape: POST /agents/installer/ returns either a binary blob (exe/ps1/sh)
+// or a JSON {cmd, url} for manual/mac. This wrapper returns JSON only — the
+// blob-download path is handled in the wizard component directly with a
+// responseType:"blob" call.
+export interface InstallerJSONResponse {
+  cmd: string;
+  url: string;
+}
+export interface InstallerRequest {
+  installMethod: "exe" | "powershell" | "manual" | "bash" | "mac";
+  client: number;
+  site: number;
+  expires: number;
+  agenttype: "server" | "workstation";
+  power: 0 | 1;
+  rdp: 0 | 1;
+  ping: 0 | 1;
+  goarch: string;
+  api: string;
+  fileName: string;
+  plat: "windows" | "linux" | "darwin";
+}
+
+export async function generateInstallerJSON(
+  req: InstallerRequest,
+): Promise<InstallerJSONResponse> {
+  const { data } = await axios.post<InstallerJSONResponse>(
+    "/agents/installer/",
+    req,
+    authConfig(),
+  );
+  return data;
+}
+
+export async function generateInstallerBlob(
+  req: InstallerRequest,
+): Promise<Blob> {
+  const { data } = await axios.post<Blob>(
+    "/agents/installer/",
+    req,
+    { ...authConfig(), responseType: "blob" },
+  );
+  return data;
+}

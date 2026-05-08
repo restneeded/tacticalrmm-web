@@ -2,6 +2,11 @@
   DevicesPage (Phase C) — new home for the agent list.
   Replaces the splitter+tree+table inside the legacy DashboardView for
   everyday device management. Legacy view is still reachable at /legacy.
+
+  Phase K: adds the Install Agent wizard launcher in the header, extends
+  bulk actions with reboot/shutdown/uninstall/recover-services/notify (all
+  via the new async /agents/actions/bulk/ pattern that returns {job_id}),
+  and shows a Recent Bulk Operations panel above the table.
 -->
 <template>
   <q-page class="devices">
@@ -19,6 +24,13 @@
           {{ totalCount.toLocaleString() }} agents
         </span>
         <q-btn
+          unelevated
+          color="primary"
+          icon="install_desktop"
+          label="Install Agent"
+          @click="openInstallWizard"
+        />
+        <q-btn
           flat
           dense
           icon="refresh"
@@ -33,6 +45,8 @@
 
     <DevicesFilterBar />
 
+    <BulkOpsPanel ref="opsPanelRef" />
+
     <BulkActionBar
       v-if="store.selected.length > 0"
       :selected="store.selected"
@@ -40,6 +54,10 @@
       @run-command="bulkRunCommand"
       @scan-patches="bulkScanPatches"
       @reboot="bulkReboot"
+      @shutdown="bulkShutdown"
+      @uninstall="bulkUninstall"
+      @recover-services="bulkRecoverServices"
+      @notify="bulkNotify"
       @clear="store.clearSelection"
     />
 
@@ -57,12 +75,14 @@ import { computed, onMounted, ref } from "vue";
 import { useQuasar } from "quasar";
 
 import { useDevicesStore } from "@/stores/devices";
-import { rebootAgent, type AgentRow } from "@/api/devices";
+import { dispatchBulkOp, type AgentRow, type BulkOp } from "@/api/devices";
 
 import DevicesFilterBar from "@/components/devices/DevicesFilterBar.vue";
 import DevicesTable from "@/components/devices/DevicesTable.vue";
 import BulkActionBar from "@/components/devices/BulkActionBar.vue";
+import BulkOpsPanel from "@/components/devices/BulkOpsPanel.vue";
 import DetailDrawer from "@/components/devices/DetailDrawer.vue";
+import AgentInstallWizard from "@/components/devices/AgentInstallWizard.vue";
 
 // Legacy bulk dialog, fully reused — same form the legacy DashboardView
 // has been driving for years. Phase C is the new chrome around it.
@@ -70,11 +90,17 @@ import BulkAction from "@/components/modals/agents/BulkAction.vue";
 
 const $q = useQuasar();
 const store = useDevicesStore();
+const opsPanelRef = ref<InstanceType<typeof BulkOpsPanel> | null>(null);
 
 onMounted(() => store.loadAgents());
 
 const totalCount = computed(() => store.rows.length);
 const filteredCount = computed(() => store.filteredRows.length);
+
+// ── Install wizard (Phase K) ───────────────────────────────────────────────
+function openInstallWizard() {
+  $q.dialog({ component: AgentInstallWizard });
+}
 
 // ── Detail drawer ──────────────────────────────────────────────────────────
 const drawerOpen = ref(false);
@@ -85,45 +111,100 @@ function openDetail(agent: AgentRow) {
 }
 
 // ── Bulk actions ───────────────────────────────────────────────────────────
-// "Run script" / "Run command" / "Scan patches" — reuse the legacy BulkAction
-// dialog component directly (Phase C is chrome, not a re-implementation of
-// every form). The dialog already speaks to /agents/actions/bulk/.
+// Existing modes still go through the legacy BulkAction dialog.
 function bulkRunScript()    { $q.dialog({ component: BulkAction, componentProps: { mode: "script"  } }); }
 function bulkRunCommand()   { $q.dialog({ component: BulkAction, componentProps: { mode: "command" } }); }
 function bulkScanPatches()  { $q.dialog({ component: BulkAction, componentProps: { mode: "patch"   } }); }
 
-// "Reboot selected" — no native bulk endpoint; iterate single-agent reboot.
-// Always confirms first; never silently fans out POSTs.
-function bulkReboot() {
-  const selected = [...store.selected];
-  if (!selected.length) return;
-  $q.dialog({
-    title: "Reboot selected agents?",
-    message: `This will request a reboot on <b>${selected.length}</b> agent${
-      selected.length === 1 ? "" : "s"
-    }. Each agent reboots independently — there is no "undo".`,
+// Phase K — async dispatch via /agents/actions/bulk/ with mode=<op>.
+function selectedAgentIds(): string[] {
+  return store.selected.map((a) => a.agent_id);
+}
+
+async function dispatchAndNotify(
+  op: BulkOp,
+  successLabel: string,
+  extra: { message?: string } = {},
+) {
+  const ids = selectedAgentIds();
+  if (!ids.length) return;
+  try {
+    const res = await dispatchBulkOp(op, ids, extra);
+    $q.notify({
+      color: "positive",
+      icon: "check_circle",
+      message: res.message || `${successLabel} dispatched.`,
+    });
+    // refresh the panel so the new job appears immediately
+    void opsPanelRef.value?.refresh?.();
+    store.clearSelection();
+  } catch (err) {
+    const detail =
+      (err as { response?: { data?: string | { detail?: string } } })
+        .response?.data;
+    const msg =
+      typeof detail === "string"
+        ? detail
+        : detail?.detail ?? `${successLabel} failed.`;
+    $q.notify({ color: "negative", message: msg });
+  }
+}
+
+function confirm(opts: { title: string; message: string; okLabel: string }) {
+  return $q.dialog({
+    title: opts.title,
+    message: opts.message,
     html: true,
     cancel: true,
     persistent: true,
-    ok: { label: "Reboot", color: "negative", flat: false },
-  }).onOk(async () => {
-    let ok = 0, fail = 0;
-    for (const a of selected) {
-      try { await rebootAgent(a.agent_id); ok += 1; }
-      catch { fail += 1; }
-    }
-    $q.notify({
-      color: fail ? "warning" : "positive",
-      message:
-        fail > 0
-          ? `Reboot requested on ${ok}; ${fail} failed.`
-          : `Reboot requested on ${ok} agent${ok === 1 ? "" : "s"}.`,
-      icon: fail ? "warning" : "check_circle",
-    });
-    store.clearSelection();
+    ok: { label: opts.okLabel, color: "negative", flat: false },
   });
 }
 
+function bulkReboot() {
+  const n = store.selected.length;
+  confirm({
+    title: "Reboot selected agents?",
+    message: `Are you sure? <b>${n}</b> agent${n === 1 ? "" : "s"} will reboot.`,
+    okLabel: "Reboot",
+  }).onOk(() => dispatchAndNotify("reboot", "Reboot"));
+}
+
+function bulkShutdown() {
+  const n = store.selected.length;
+  confirm({
+    title: "Shutdown selected agents?",
+    message: `Are you sure? <b>${n}</b> agent${n === 1 ? "" : "s"} will shut down.`,
+    okLabel: "Shutdown",
+  }).onOk(() => dispatchAndNotify("shutdown", "Shutdown"));
+}
+
+function bulkUninstall() {
+  const n = store.selected.length;
+  confirm({
+    title: "Uninstall agents?",
+    message:
+      `<b>${n}</b> agent${n === 1 ? "" : "s"} will go offline permanently. ` +
+      `Re-installing requires running the installer again.`,
+    okLabel: "Uninstall",
+  }).onOk(() => dispatchAndNotify("uninstall", "Uninstall"));
+}
+
+function bulkRecoverServices() {
+  void dispatchAndNotify("recover-services", "Service recovery");
+}
+
+function bulkNotify() {
+  $q.dialog({
+    title: "Send notification",
+    message: "Message to display on each agent's tray:",
+    prompt: { model: "", type: "text", isValid: (v: string) => !!v },
+    cancel: true,
+    persistent: true,
+  }).onOk((message: string) => {
+    void dispatchAndNotify("notify", "Notification", { message });
+  });
+}
 </script>
 
 <style lang="scss" scoped>

@@ -2,6 +2,10 @@
   BulkActionBar — sticky bar that shows when ≥1 row is selected.
   Action buttons emit events back to the page; the page owns the actual
   network calls and confirmation dialogs.
+
+  Phase K: extended in-place with the legacy-bulk action set:
+    reboot, shutdown, uninstall, recover-services, notify, run-script,
+    run-command, scan-patches.
 -->
 <template>
   <div class="bab">
@@ -15,7 +19,12 @@
       <q-btn flat dense icon="terminal"   label="Run command" @click="$emit('run-command')" />
       <q-btn flat dense icon="search"     label="Scan patches" @click="$emit('scan-patches')" />
       <q-separator vertical />
-      <q-btn flat dense icon="restart_alt" label="Reboot" color="negative" @click="$emit('reboot')" />
+      <q-btn flat dense icon="build_circle" label="Recover services" @click="$emit('recover-services')" />
+      <q-btn flat dense icon="campaign"     label="Notify"            @click="$emit('notify')" />
+      <q-separator vertical />
+      <q-btn flat dense icon="restart_alt" label="Reboot"   color="negative" @click="$emit('reboot')" />
+      <q-btn flat dense icon="power_settings_new" label="Shutdown" color="negative" @click="$emit('shutdown')" />
+      <q-btn flat dense icon="delete_forever"     label="Uninstall" color="negative" @click="$emit('uninstall')" />
     </div>
 
     <q-btn flat dense icon="close" @click="$emit('clear')">
@@ -32,6 +41,10 @@ defineEmits<{
   (e: "run-command"): void;
   (e: "scan-patches"): void;
   (e: "reboot"): void;
+  (e: "shutdown"): void;
+  (e: "uninstall"): void;
+  (e: "recover-services"): void;
+  (e: "notify"): void;
   (e: "clear"): void;
 }>();
 </script>
@@ -64,6 +77,8 @@ defineEmits<{
     gap: 4px;
     margin-left: auto;
     margin-right: auto;
+    flex-wrap: wrap;
+    justify-content: center;
     :deep(.q-btn) { color: white; }
     :deep(.q-separator) {
       background: rgba(255,255,255,0.3);
