@@ -15,48 +15,20 @@
         <div class="app-shell__brand q-ml-sm">
           <q-icon name="shield" size="20px" class="app-shell__brand-mark" />
           <span class="app-shell__brand-text">Tactical RMM</span>
-          <span class="app-shell__brand-tag">Phase&nbsp;A</span>
         </div>
 
         <q-space />
 
-        <!-- search (placeholder for Phase B) -->
-        <div class="app-shell__search">
-          <q-icon name="search" size="16px" class="app-shell__search-icon" />
-          <input
-            v-model="searchQuery"
-            class="app-shell__search-input"
-            type="text"
-            placeholder="Search agents, scripts, settings…"
-            aria-label="Search"
-          />
-        </div>
+        <!-- Phase T1: global search (agents + clients + sites) -->
+        <TopBarSearch />
 
         <q-space />
 
-        <q-btn
-          flat
-          round
-          dense
-          :icon="themeIcon"
-          aria-label="Toggle theme"
-          @click="theme.cycle()"
-        >
-          <q-tooltip anchor="bottom middle" self="top middle">
-            Theme: {{ theme.mode }}
-          </q-tooltip>
-        </q-btn>
+        <!-- Phase T1: notifications panel — badge + top-5 unresolved alerts -->
+        <TopBarNotifications />
 
-        <q-btn flat round dense icon="notifications_none" aria-label="Notifications">
-          <q-tooltip anchor="bottom middle" self="top middle">Notifications</q-tooltip>
-        </q-btn>
-
-        <q-btn flat round dense aria-label="Account">
-          <q-avatar size="28px" color="primary" text-color="white">
-            <span class="text-caption">R</span>
-          </q-avatar>
-          <q-tooltip anchor="bottom middle" self="top middle">Account</q-tooltip>
-        </q-btn>
+        <!-- Phase T1: account menu — username/role, theme, sign out -->
+        <TopBarAccountMenu />
       </q-toolbar>
     </q-header>
 
@@ -137,32 +109,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { useThemeStore } from "@/stores/theme";
+import { ref, computed, onMounted } from "vue";
 import { useAlertCount }  from "@/composables/useAlertCount";
 import { usePendingCount } from "@/composables/usePendingCount";
+import { useCurrentUserPermsStore } from "@/stores/permissions";
+import TopBarSearch from "@/components/topbar/TopBarSearch.vue";
+import TopBarNotifications from "@/components/topbar/TopBarNotifications.vue";
+import TopBarAccountMenu from "@/components/topbar/TopBarAccountMenu.vue";
 
-const theme = useThemeStore();
 const { count: alertCount }   = useAlertCount();
 const { count: pendingCount } = usePendingCount();
 
 const leftDrawerOpen = ref(true);
 const miniSidebar = ref(false);
-const searchQuery = ref("");
-
-const themeIcon = computed(() => {
-  if (theme.mode === "light") return "light_mode";
-  if (theme.mode === "dark") return "dark_mode";
-  return "brightness_auto";
-});
 
 // Sidebar groups — Phase A scaffold. Phase B+ will add child pages and
 // peel functionality out of /legacy DashboardView.vue.
-import { onMounted } from "vue";
-import { useCurrentUserPermsStore } from "@/stores/permissions";
 
 const permsStore = useCurrentUserPermsStore();
-onMounted(() => { void permsStore.ensure(); });
+onMounted(() => {
+  void permsStore.ensure();
+});
 
 const navGroups = [
   {
@@ -256,45 +223,6 @@ function visibleItems(group) {
   }
   &__brand-mark { color: var(--color-brand-rest); }
   &__brand-text { letter-spacing: 0.1px; }
-  &__brand-tag {
-    font-size: var(--intune-font-size-200);
-    font-weight: var(--intune-font-weight-regular);
-    color: var(--color-fg-tertiary);
-    border: 1px solid var(--color-stroke-divider);
-    padding: 2px 8px;
-    border-radius: var(--intune-radius-circular);
-    margin-left: var(--intune-space-s);
-  }
-
-  &__search {
-    display: flex;
-    align-items: center;
-    gap: var(--intune-space-s);
-    background-color: var(--color-bg-surface-2);
-    border: 1px solid var(--color-stroke-divider);
-    border-radius: var(--intune-radius-medium);
-    padding: 0 var(--intune-space-m);
-    width: min(560px, 40vw);
-    height: 32px;
-    transition: border-color var(--intune-duration-fast) var(--intune-curve-easy-ease);
-
-    &:focus-within {
-      border-color: var(--color-stroke-focus);
-      box-shadow: 0 0 0 1px var(--color-stroke-focus);
-    }
-  }
-  &__search-icon { color: var(--color-fg-tertiary); }
-  &__search-input {
-    flex: 1;
-    background: transparent;
-    border: 0;
-    outline: 0;
-    color: var(--color-fg-primary);
-    font-family: var(--intune-font-family);
-    font-size: var(--intune-font-size-300);
-    line-height: var(--intune-line-height-300);
-    &::placeholder { color: var(--color-fg-tertiary); }
-  }
 
   &__sidebar {
     background-color: var(--color-bg-sidebar);
