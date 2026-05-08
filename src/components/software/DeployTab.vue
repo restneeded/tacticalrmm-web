@@ -13,16 +13,6 @@
           <template #prepend><q-icon name="search" /></template>
         </q-input>
 
-        <q-select
-          v-model="sourceFilter"
-          :options="sourceOptions"
-          dense
-          outlined
-          emit-value
-          map-options
-          class="apps-card__filter"
-        />
-
         <q-space />
         <span class="deploy-tab__catalog-count text-caption">
           {{ filteredRows.length }} of {{ catalog.length }} packages
@@ -52,12 +42,8 @@
         </template>
         <template #body-cell-source="props">
           <q-td :props="props">
-            <q-chip
-              dense
-              outline
-              :class="`pkg-chip pkg-chip--${props.row.source}`"
-            >
-              {{ props.row.source }}: {{ props.row.package_id }}
+            <q-chip dense outline class="pkg-chip pkg-chip--choco">
+              {{ props.row.package_id }}
             </q-chip>
           </q-td>
         </template>
@@ -246,12 +232,6 @@ const $q = useQuasar();
 const catalog = ref<CatalogPackage[]>([]);
 const loading = ref(false);
 const search = ref("");
-const sourceFilter = ref<"all" | "choco" | "winget">("all");
-const sourceOptions = [
-  { label: "All sources", value: "all" },
-  { label: "Chocolatey only", value: "choco" },
-  { label: "WinGet only", value: "winget" },
-];
 
 const jobs = ref<DeployJobSummary[]>([]);
 const jobsLoading = ref(false);
@@ -269,7 +249,7 @@ const paginationModel = ref({
 
 const columns = [
   { name: "name", label: "Package", field: "display_name", align: "left" as const, sortable: true },
-  { name: "source", label: "Source · package id", field: "package_id", align: "left" as const, sortable: true },
+  { name: "source", label: "Choco package id", field: "package_id", align: "left" as const, sortable: true },
   { name: "version", label: "Latest known", field: "latest_version_known", align: "left" as const, sortable: false },
   { name: "actions", label: "", field: "package_id", align: "right" as const, sortable: false },
 ];
@@ -277,7 +257,6 @@ const columns = [
 const filteredRows = computed(() => {
   const q = search.value.trim().toLowerCase();
   return catalog.value
-    .filter((r) => sourceFilter.value === "all" || r.source === sourceFilter.value)
     .filter(
       (r) =>
         !q ||
@@ -285,7 +264,7 @@ const filteredRows = computed(() => {
         r.publisher.toLowerCase().includes(q) ||
         r.package_id.toLowerCase().includes(q),
     )
-    .map((r) => ({ ...r, rowKey: `${r.source}:${r.package_id}` }));
+    .map((r) => ({ ...r, rowKey: `choco:${r.package_id}` }));
 });
 
 async function loadCatalog() {
@@ -387,7 +366,7 @@ onMounted(() => {
   loadJobs();
 });
 
-watch([sourceFilter, search], () => {
+watch(search, () => {
   paginationModel.value.page = 1;
 });
 </script>
@@ -479,6 +458,5 @@ watch([sourceFilter, search], () => {
 .pkg-chip {
   font-size: var(--intune-font-size-200);
   &--choco { color: #80b918; border-color: #80b918; }
-  &--winget { color: #0078d4; border-color: #0078d4; }
 }
 </style>

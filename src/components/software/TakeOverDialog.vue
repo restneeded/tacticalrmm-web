@@ -313,8 +313,6 @@ onMounted(load);
     padding: 0 8px;
 
     &--choco { background: #80c5e3; color: #053b59; }
-    &--winget { background: #b5b5ff; color: #1a1a4d; }
-    &--wuauserv { background: #cccccc; color: #333; }
   }
   &__reason {
     color: var(--color-fg-tertiary);

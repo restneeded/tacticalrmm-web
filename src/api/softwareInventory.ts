@@ -71,7 +71,7 @@ export interface InstalledAppDetail extends InstalledAppListRow {
 }
 
 export interface PackageCandidate {
-  source: "choco" | "winget" | "wuauserv";
+  source: "choco";
   package_id: string;
   display_name: string;
   publisher: string;
@@ -203,7 +203,7 @@ export async function forceUpdateApp(id: number): Promise<ForceUpdateResponse> {
 // ── Phase F — deploy + review queue helpers ────────────────────────────
 
 export interface CatalogPackage {
-  source: "choco" | "winget" | "wuauserv";
+  source: "choco";
   package_id: string;
   display_name: string;
   publisher: string;
@@ -293,7 +293,7 @@ export async function listCatalog(): Promise<{ count: number; results: CatalogPa
 }
 
 export async function createDeployJob(payload: {
-  source: "choco" | "winget";
+  source: "choco";
   package_id: string;
   display_name?: string;
   publisher?: string;
@@ -339,7 +339,7 @@ export async function listReviews(
 export async function resolveReviewMatch(
   id: number,
   payload: {
-    source: "choco" | "winget";
+    source: "choco";
     package_id: string;
     display_name?: string;
     publisher?: string;

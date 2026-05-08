@@ -6,8 +6,7 @@
           Deploy <span class="deploy-dialog__app-name">{{ pkg.display_name }}</span>
         </h2>
         <p class="deploy-dialog__subtitle">
-          via {{ pkg.source === "choco" ? "Chocolatey" : "WinGet" }}
-          · <code>{{ pkg.package_id }}</code>
+          via Chocolatey · <code>{{ pkg.package_id }}</code>
           <span v-if="pkg.publisher"> · {{ pkg.publisher }}</span>
         </p>
         <q-btn
@@ -342,7 +341,7 @@ async function onSubmit() {
       if (v) targets.agent_ids = v.agent_ids;
     }
     const resp = await createDeployJob({
-      source: props.pkg.source as "choco" | "winget",
+      source: "choco",
       package_id: props.pkg.package_id,
       display_name: props.pkg.display_name,
       publisher: props.pkg.publisher,

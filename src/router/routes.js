@@ -36,7 +36,7 @@ const routes = [
         props: {
           title: "Patching",
           icon: "system_update",
-          lede: "Windows updates, third-party patching via Chocolatey + WinGet, ringed rollouts, and drift compliance.",
+          lede: "Windows updates, third-party patching via Chocolatey, ringed rollouts, and drift compliance.",
           phase: "Phase F",
         },
         meta: { requireAuth: true },

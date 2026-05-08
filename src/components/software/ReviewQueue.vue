@@ -66,7 +66,7 @@
             option-label="label"
             option-value="key"
             input-debounce="200"
-            label="Pick a Choco/WinGet package"
+            label="Pick a Chocolatey package"
             class="review-row__select"
             @filter="filterCatalog"
           />
@@ -104,7 +104,7 @@
           <q-item-label class="text-caption">
             <span v-if="statusFilter === 'pending'">No pending review requests. </span>
             <span v-else>No {{ statusFilter }} reviews to show.</span>
-            Apps without a Choco/WinGet match show up here when an admin
+            Apps without a Chocolatey match show up here when an admin
             clicks "Request review" on Discovery.
           </q-item-label>
         </q-item-section>
@@ -216,14 +216,14 @@ async function onMatch(row: ReviewRow) {
   busyOp.value = "match";
   try {
     await resolveReviewMatch(row.id, {
-      source: opt.row.source as "choco" | "winget",
+      source: "choco",
       package_id: opt.row.package_id,
       display_name: opt.row.display_name,
       publisher: opt.row.publisher,
     });
     $q.notify({
       type: "positive",
-      message: `Matched ${row.app.name} → ${opt.row.source}: ${opt.row.package_id}`,
+      message: `Matched ${row.app.name} → choco: ${opt.row.package_id}`,
       timeout: 4000,
     });
     emit("resolved", row);
