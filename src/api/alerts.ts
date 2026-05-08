@@ -11,3 +11,9 @@ export async function addAlertTemplate(payload: AlertTemplate) {
   const { data } = await axios.post("alerts/templates/", payload);
   return data;
 }
+
+// Phase O — list alert templates so the policy editor can offer a picker.
+export async function fetchAlertTemplates() {
+  const { data } = await axios.get(`alerts/templates/`);
+  return data;
+}

@@ -48,7 +48,15 @@
           <header class="card__head">
             <div>
               <div class="card__source">{{ src.label }}</div>
-              <h4 class="card__name">{{ src.policy?.name || "—" }}</h4>
+              <router-link
+                v-if="src.policy && (src.policy.id ?? src.policy.pk)"
+                :to="{ name: 'PolicyDetail', params: { id: src.policy.id ?? src.policy.pk } }"
+                class="card__name card__name--link"
+              >
+                {{ src.policy.name || "—" }}
+                <q-icon name="open_in_new" size="12px" class="card__name-ic" />
+              </router-link>
+              <h4 v-else class="card__name">{{ src.policy?.name || "—" }}</h4>
             </div>
             <span class="badge" :class="src.policy?.active ? 'badge--ok' : 'badge--neutral'">
               {{ src.policy?.active ? "active" : "inactive" }}
@@ -72,7 +80,7 @@
         </article>
       </div>
       <div class="ad-tab__hint">
-        Policy editor lands in Phase O. Today this view is read-only.
+        Click a policy name to open it in the policy editor.
       </div>
     </section>
 

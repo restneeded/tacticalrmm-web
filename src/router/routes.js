@@ -76,6 +76,20 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase O: Policies library + assignments overview.
+        path: "policies",
+        name: "Policies",
+        component: () => import("@/pages/PoliciesPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase O: Policy detail page (Checks/Tasks/Assignments/WinUpdate).
+        path: "policies/:id(\\d+)",
+        name: "PolicyDetail",
+        component: () => import("@/pages/PolicyDetailPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         path: "scripts/new",
         name: "ScriptNew",
         component: () => import("@/pages/ScriptDetailPage.vue"),

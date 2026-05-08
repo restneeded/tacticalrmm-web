@@ -406,10 +406,14 @@ import { notifySuccess, notifyError } from "@/utils/notify";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  // edit-mode: pass an existing check id; create-mode: leave null and pass agentId.
+  // edit-mode: pass an existing check id; create-mode: leave null and pass
+  // EITHER agentId (agent-target check) OR policyId (policy-target check).
   checkId: { type: Number, default: null },
   agentId: { type: String, default: "" },
   agentLabel: { type: String, default: "" },
+  // Phase O: policy-target checks (drawer reused by /policies/:id).
+  policyId: { type: Number, default: null },
+  policyLabel: { type: String, default: "" },
   // create-mode: pre-pick a check_type when opening (e.g. "Add disk space check").
   initialCheckType: { type: String, default: "diskspace" },
 });
@@ -419,8 +423,9 @@ const emit = defineEmits(["update:modelValue", "saved"]);
 const isEdit = computed(() => !!props.checkId);
 
 const targetLabel = computed(() => {
+  if (props.policyId)   return `Policy: ${props.policyLabel || `#${props.policyId}`}`;
   if (props.agentLabel) return `Agent: ${props.agentLabel}`;
-  if (props.agentId) return `Agent: ${props.agentId}`;
+  if (props.agentId)    return `Agent: ${props.agentId}`;
   return "—";
 });
 
@@ -693,8 +698,12 @@ function buildPayload() {
   }
 
   // create-mode only — backend reads either agent or policy on create.
-  if (!isEdit.value && props.agentId) {
-    base.agent = props.agentId;
+  if (!isEdit.value) {
+    if (props.policyId) {
+      base.policy = props.policyId;
+    } else if (props.agentId) {
+      base.agent = props.agentId;
+    }
   }
 
   return base;

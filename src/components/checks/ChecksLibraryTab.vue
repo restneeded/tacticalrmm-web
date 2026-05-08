@@ -132,10 +132,17 @@
       </template>
       <template #body-cell-targets="p">
         <q-td :props="p" class="lib__targets">
-          {{ p.row.targets }}
-          <span v-if="p.row.policy_count" class="lib__sub">
-            ({{ p.row.policy_count }} policy)
-          </span>
+          <PolicyChip
+            v-if="!Array.isArray(p.row.raw) && p.row.raw && p.row.raw.policy"
+            :policy-id="p.row.raw.policy"
+            :name="p.row.raw.policy_name || ''"
+          />
+          <template v-else>
+            {{ p.row.targets }}
+            <span v-if="p.row.policy_count" class="lib__sub">
+              ({{ p.row.policy_count }} policy)
+            </span>
+          </template>
         </q-td>
       </template>
       <template #body-cell-failing="p">

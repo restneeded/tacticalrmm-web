@@ -440,10 +440,14 @@ import {
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  // edit-mode: pass an existing task pk; create-mode: leave null + pass agentId.
+  // edit-mode: pass an existing task pk; create-mode: leave null + pass
+  // EITHER agentId (agent-target task) OR policyId (policy-target task).
   taskId: { type: Number, default: null },
   agentId: { type: String, default: "" },
   agentLabel: { type: String, default: "" },
+  // Phase O: policy-target tasks (drawer reused by /policies/:id).
+  policyId: { type: Number, default: null },
+  policyLabel: { type: String, default: "" },
 });
 
 const emit = defineEmits(["update:modelValue", "saved", "ran"]);
@@ -451,6 +455,7 @@ const emit = defineEmits(["update:modelValue", "saved", "ran"]);
 const isEdit = computed(() => !!props.taskId);
 
 const targetLabel = computed(() => {
+  if (props.policyId)   return `Policy: ${props.policyLabel || `#${props.policyId}`}`;
   if (props.agentLabel) return `Agent: ${props.agentLabel}`;
   if (props.agentId)    return `Agent: ${props.agentId}`;
   return "—";
@@ -799,8 +804,12 @@ function buildPayload() {
   }
 
   // Create-mode only — backend reads either agent or policy on create.
-  if (!isEdit.value && props.agentId) {
-    out.agent = props.agentId;
+  if (!isEdit.value) {
+    if (props.policyId) {
+      out.policy = props.policyId;
+    } else if (props.agentId) {
+      out.agent = props.agentId;
+    }
   }
 
   return out;

@@ -157,8 +157,12 @@
       </template>
       <template #body-cell-target="p">
         <q-td :props="p">
-          <span v-if="p.row.agent">agent #{{ p.row.agent }}</span>
-          <span v-else-if="p.row.policy">policy #{{ p.row.policy }}</span>
+          <PolicyChip
+            v-if="p.row.policy"
+            :policy-id="p.row.policy"
+            :name="p.row.policy_name || ''"
+          />
+          <span v-else-if="p.row.agent">agent #{{ p.row.agent }}</span>
           <span v-else>—</span>
         </q-td>
       </template>
@@ -212,6 +216,7 @@ import {
   fetchTasks, removeTask, runTask, updateTask,
 } from "@/api/tasks";
 import TaskEditor from "./TaskEditor.vue";
+import PolicyChip from "@/components/policies/PolicyChip.vue";
 import { TASK_TYPE_OPTIONS, formatSchedule } from "./scheduleHelpers.js";
 import { notifySuccess, notifyError } from "@/utils/notify";
 
