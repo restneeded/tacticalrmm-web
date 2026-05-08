@@ -262,6 +262,14 @@ import { getBaseUrl } from "@/boot/axios";
 const { dialogRef, onDialogHide } = useDialogPluginComponent();
 defineEmits([...useDialogPluginComponent.emits]);
 
+// Phase T3 — when opened from a Client/Site row context menu we pre-select
+// the row's client (and site, if the row is a site). Falls through to the
+// persisted last-used selection when these are absent.
+const props = defineProps<{
+  defaultClientId?: number | null;
+  defaultSiteId?: number | null;
+}>();
+
 const $q = useQuasar();
 const cache = useClientsCacheStore();
 
@@ -519,6 +527,9 @@ function finish() {
 onMounted(async () => {
   await cache.ensureFresh();
   restorePersisted();
+  // Row-context overrides take precedence over the persisted last-used.
+  if (props.defaultClientId != null) form.client = props.defaultClientId;
+  if (props.defaultSiteId != null) form.site = props.defaultSiteId;
 });
 </script>
 

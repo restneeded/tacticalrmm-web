@@ -3,6 +3,10 @@
   - Default: one row per Site.
   - Group-by-Client toggle: one row per Client (no per-site rows; aggregated).
   - Reuses Phase C skinning conventions (density, header style, hover, etc.).
+
+  Phase T3 — every row fires `row-context` on right-click. The page renders
+  a single shared <RowContextMenu> positioned at the click point — q-menu
+  cannot legally live inside a <tr>, so we lift the menu up to the page.
 -->
 <template>
   <div :class="`cstbl cstbl--${density}`">
@@ -31,98 +35,63 @@
       class="cstbl__q"
       no-data-label="No clients or sites match your filters."
     >
-      <!-- Client name (clickable to open client edit drawer) -->
-      <template v-slot:body-cell-client_name="props">
-        <q-td :props="props">
-          <a
-            class="cstbl__link"
-            href="#"
-            @click.prevent="$emit('open-client', props.row)"
-          >{{ props.row.client_name }}</a>
-        </q-td>
-      </template>
-
-      <!-- Site name (inline-edit) -->
-      <template v-slot:body-cell-site_name="props">
-        <q-td :props="props">
-          <InlineEditCell
-            :value="props.row.site_name"
-            placeholder="(unnamed)"
-            @save="(val) => onEditSiteName(props.row, val)"
-          />
-        </q-td>
-      </template>
-
-      <!-- Workstations (count + online/total mini-bar) -->
-      <template v-slot:body-cell-workstations="props">
-        <q-td :props="props">
-          <CountBar
-            :online="props.row.workstations_online"
-            :total="props.row.workstations_total"
-            tone="primary"
-          />
-        </q-td>
-      </template>
-
-      <!-- Servers (count + online/total mini-bar) -->
-      <template v-slot:body-cell-servers="props">
-        <q-td :props="props">
-          <CountBar
-            :online="props.row.servers_online"
-            :total="props.row.servers_total"
-            tone="brand"
-          />
-        </q-td>
-      </template>
-
-      <!-- Total agents -->
-      <template v-slot:body-cell-agent_count="props">
-        <q-td :props="props" class="text-right">
-          <span class="cstbl__num">{{ props.row.agent_count }}</span>
-        </q-td>
-      </template>
-
-      <!-- Failing checks -->
-      <template v-slot:body-cell-failing_checks="props">
-        <q-td :props="props" class="text-right">
-          <span
-            v-if="props.row.failing_checks > 0"
-            class="cstbl__fail"
-          >{{ props.row.failing_checks }}</span>
-          <span v-else class="cstbl__zero">0</span>
-        </q-td>
-      </template>
-
-      <!-- Patches pending -->
-      <template v-slot:body-cell-patches_pending="props">
-        <q-td :props="props" class="text-right">
-          <span
-            v-if="props.row.patches_pending > 0"
-            class="cstbl__warn"
-          >{{ props.row.patches_pending }}</span>
-          <span v-else class="cstbl__zero">0</span>
-        </q-td>
-      </template>
-
-      <!-- Last seen -->
-      <template v-slot:body-cell-last_seen="props">
-        <q-td :props="props">
-          <span :title="props.row.last_seen || ''">{{ relTime(props.row.last_seen) }}</span>
-        </q-td>
-      </template>
-
-      <!-- Maintenance -->
-      <template v-slot:body-cell-maintenance_mode="props">
-        <q-td :props="props" class="text-center">
-          <q-icon
-            v-if="props.row.maintenance_mode"
-            name="build"
-            color="warning"
-            size="18px"
-          >
-            <q-tooltip>Maintenance mode on at least one agent</q-tooltip>
-          </q-icon>
-        </q-td>
+      <template v-slot:body="props">
+        <q-tr
+          :props="props"
+          class="cstbl__row"
+          @contextmenu.prevent="(e: MouseEvent) => onContext('site', props.row, e)"
+        >
+          <q-td auto-width>
+            <q-checkbox v-model="props.selected" />
+          </q-td>
+          <q-td v-for="col in props.cols" :key="col.name" :props="props">
+            <template v-if="col.name === 'client_name'">
+              <a
+                class="cstbl__link"
+                href="#"
+                @click.prevent="$emit('open-client', props.row)"
+              >{{ props.row.client_name }}</a>
+            </template>
+            <template v-else-if="col.name === 'site_name'">
+              <InlineEditCell
+                :value="props.row.site_name"
+                placeholder="(unnamed)"
+                @save="(val) => onEditSiteName(props.row, val)"
+              />
+            </template>
+            <template v-else-if="col.name === 'workstations'">
+              <CountBar :online="props.row.workstations_online" :total="props.row.workstations_total" tone="primary" />
+            </template>
+            <template v-else-if="col.name === 'servers'">
+              <CountBar :online="props.row.servers_online" :total="props.row.servers_total" tone="brand" />
+            </template>
+            <template v-else-if="col.name === 'agent_count'">
+              <span class="cstbl__num">{{ props.row.agent_count }}</span>
+            </template>
+            <template v-else-if="col.name === 'failing_checks'">
+              <span v-if="props.row.failing_checks > 0" class="cstbl__fail">{{ props.row.failing_checks }}</span>
+              <span v-else class="cstbl__zero">0</span>
+            </template>
+            <template v-else-if="col.name === 'patches_pending'">
+              <span v-if="props.row.patches_pending > 0" class="cstbl__warn">{{ props.row.patches_pending }}</span>
+              <span v-else class="cstbl__zero">0</span>
+            </template>
+            <template v-else-if="col.name === 'last_seen'">
+              <span :title="props.row.last_seen || ''">{{ relTime(props.row.last_seen) }}</span>
+            </template>
+            <template v-else-if="col.name === 'maintenance_mode'">
+              <q-icon
+                v-if="props.row.maintenance_mode"
+                name="build"
+                color="warning"
+                size="18px"
+              >
+                <q-tooltip>Maintenance mode on at least one agent</q-tooltip>
+              </q-icon>
+            </template>
+            <template v-else>{{ col.value }}</template>
+          </q-td>
+        </q-tr>
       </template>
     </q-table>
 
@@ -145,56 +114,42 @@
       class="cstbl__q"
       no-data-label="No clients match your filters."
     >
-      <template v-slot:body-cell-client_name="props">
-        <q-td :props="props">
-          <a
-            class="cstbl__link"
-            href="#"
-            @click.prevent="$emit('open-client-by-id', props.row.client_id)"
-          >{{ props.row.client_name }}</a>
-        </q-td>
-      </template>
-      <template v-slot:body-cell-site_count="props">
-        <q-td :props="props" class="text-right">
-          <span class="cstbl__num">{{ props.row.site_count }}</span>
-        </q-td>
-      </template>
-      <template v-slot:body-cell-workstations="props">
-        <q-td :props="props">
-          <CountBar
-            :online="props.row.workstations_online"
-            :total="props.row.workstations_total"
-            tone="primary"
-          />
-        </q-td>
-      </template>
-      <template v-slot:body-cell-servers="props">
-        <q-td :props="props">
-          <CountBar
-            :online="props.row.servers_online"
-            :total="props.row.servers_total"
-            tone="brand"
-          />
-        </q-td>
-      </template>
-      <template v-slot:body-cell-agent_count="props">
-        <q-td :props="props" class="text-right">
-          <span class="cstbl__num">{{ props.row.agent_count }}</span>
-        </q-td>
-      </template>
-      <template v-slot:body-cell-failing_checks="props">
-        <q-td :props="props" class="text-right">
-          <span
-            v-if="props.row.failing_checks > 0"
-            class="cstbl__fail"
-          >{{ props.row.failing_checks }}</span>
-          <span v-else class="cstbl__zero">0</span>
-        </q-td>
-      </template>
-      <template v-slot:body-cell-last_seen="props">
-        <q-td :props="props">
-          <span :title="props.row.last_seen || ''">{{ relTime(props.row.last_seen) }}</span>
-        </q-td>
+      <template v-slot:body="props">
+        <q-tr
+          :props="props"
+          class="cstbl__row"
+          @contextmenu.prevent="(e: MouseEvent) => onContext('client', props.row, e)"
+        >
+          <q-td v-for="col in props.cols" :key="col.name" :props="props">
+            <template v-if="col.name === 'client_name'">
+              <a
+                class="cstbl__link"
+                href="#"
+                @click.prevent="$emit('open-client-by-id', props.row.client_id)"
+              >{{ props.row.client_name }}</a>
+            </template>
+            <template v-else-if="col.name === 'site_count'">
+              <span class="cstbl__num">{{ props.row.site_count }}</span>
+            </template>
+            <template v-else-if="col.name === 'workstations'">
+              <CountBar :online="props.row.workstations_online" :total="props.row.workstations_total" tone="primary" />
+            </template>
+            <template v-else-if="col.name === 'servers'">
+              <CountBar :online="props.row.servers_online" :total="props.row.servers_total" tone="brand" />
+            </template>
+            <template v-else-if="col.name === 'agent_count'">
+              <span class="cstbl__num">{{ props.row.agent_count }}</span>
+            </template>
+            <template v-else-if="col.name === 'failing_checks'">
+              <span v-if="props.row.failing_checks > 0" class="cstbl__fail">{{ props.row.failing_checks }}</span>
+              <span v-else class="cstbl__zero">0</span>
+            </template>
+            <template v-else-if="col.name === 'last_seen'">
+              <span :title="props.row.last_seen || ''">{{ relTime(props.row.last_seen) }}</span>
+            </template>
+            <template v-else>{{ col.value }}</template>
+          </q-td>
+        </q-tr>
       </template>
     </q-table>
   </div>
@@ -208,6 +163,7 @@ import { useClientsSitesStore } from "@/stores/clientsSites";
 import { editSite } from "@/api/clients";
 import { QTABLE_COLUMNS } from "@/components/clientsSites/columns";
 import type { SiteRow } from "@/components/clientsSites/columns";
+import type { GroupedClientRow } from "@/stores/clientsSites";
 
 import InlineEditCell from "@/components/devices/InlineEditCell.vue";
 import CountBar from "@/components/clientsSites/CountBar.vue";
@@ -216,6 +172,12 @@ const emit = defineEmits<{
   (e: "open-detail", row: SiteRow): void;
   (e: "open-client", row: SiteRow): void;
   (e: "open-client-by-id", id: number): void;
+  (e: "row-context", payload: {
+    scope: "client" | "site";
+    row: SiteRow | GroupedClientRow;
+    clientX: number;
+    clientY: number;
+  }): void;
 }>();
 
 const store = useClientsSitesStore();
@@ -256,6 +218,14 @@ const selectedProxy = computed({
 });
 function onSelected(v: SiteRow[]) {
   store.selected = v;
+}
+
+function onContext(
+  scope: "client" | "site",
+  row: SiteRow | GroupedClientRow,
+  e: MouseEvent,
+) {
+  emit("row-context", { scope, row, clientX: e.clientX, clientY: e.clientY });
 }
 
 function relTime(ts: string | null): string {
@@ -352,5 +322,6 @@ async function onEditSiteName(row: SiteRow, value: string) {
     color: var(--color-fg-tertiary);
     font-variant-numeric: tabular-nums;
   }
+  &__row { cursor: default; }
 }
 </style>

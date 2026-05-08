@@ -6,6 +6,12 @@
   Phase K: extended in-place with the legacy-bulk action set:
     reboot, shutdown, uninstall, recover-services, notify, run-script,
     run-command, scan-patches.
+
+  Phase T3: opt-in `siteScope` prop adds a second action group (Toggle
+  Maintenance, Assign Policy, Assign Alert Template, Run URL Action, Run
+  Checks) used by ClientsSitesPage when the user has multi-selected site
+  rows. The agent-translation actions (run-script etc.) are kept because
+  the page can union agents under selected sites.
 -->
 <template>
   <div class="bab">
@@ -21,6 +27,25 @@
       <q-separator vertical />
       <q-btn flat dense icon="build_circle" label="Recover services" @click="$emit('recover-services')" />
       <q-btn flat dense icon="campaign"     label="Notify"            @click="$emit('notify')" />
+
+      <template v-if="siteScope">
+        <q-separator vertical />
+        <q-btn-dropdown flat dense icon="build" label="Maintenance" no-caps>
+          <q-list dense>
+            <q-item clickable v-close-popup @click="$emit('enable-maintenance')">
+              <q-item-section>Enable on all selected</q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="$emit('disable-maintenance')">
+              <q-item-section>Disable on all selected</q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+        <q-btn flat dense icon="policy"        label="Policy"         @click="$emit('assign-policy')" />
+        <q-btn flat dense icon="notifications" label="Alert Template" @click="$emit('assign-alert-template')" />
+        <q-btn flat dense icon="open_in_new"   label="URL Action"     @click="$emit('run-url-action')" />
+        <q-btn flat dense icon="fact_check"    label="Run Checks"     @click="$emit('run-checks-bulk')" />
+      </template>
+
       <q-separator vertical />
       <q-btn flat dense icon="restart_alt" label="Reboot"   color="negative" @click="$emit('reboot')" />
       <q-btn flat dense icon="power_settings_new" label="Shutdown" color="negative" @click="$emit('shutdown')" />
@@ -35,7 +60,10 @@
 
 <script setup lang="ts">
 import type { AgentRow } from "@/api/devices";
-defineProps<{ selected: AgentRow[] }>();
+withDefaults(
+  defineProps<{ selected: AgentRow[]; siteScope?: boolean }>(),
+  { siteScope: false },
+);
 defineEmits<{
   (e: "run-script"): void;
   (e: "run-command"): void;
@@ -46,6 +74,13 @@ defineEmits<{
   (e: "recover-services"): void;
   (e: "notify"): void;
   (e: "clear"): void;
+  // Phase T3 — site-scope additions, only emitted when siteScope=true.
+  (e: "enable-maintenance"): void;
+  (e: "disable-maintenance"): void;
+  (e: "assign-policy"): void;
+  (e: "assign-alert-template"): void;
+  (e: "run-url-action"): void;
+  (e: "run-checks-bulk"): void;
 }>();
 </script>
 
