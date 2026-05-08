@@ -124,6 +124,7 @@
         class="agent-detail__tabstrip"
       >
         <q-tab name="overview"   label="Overview" />
+        <q-tab name="checks"     label="Checks" />
         <q-tab name="hardware"   label="Hardware" />
         <q-tab name="software"   label="Software" />
         <q-tab name="scripts"    label="Scripts" />
@@ -141,6 +142,9 @@
       >
         <q-tab-panel name="overview">
           <OverviewTab :agent-id="agentId" :status="status" />
+        </q-tab-panel>
+        <q-tab-panel name="checks">
+          <ChecksTab :agent-id="agentId" :agent-label="status?.hostname || agentId" />
         </q-tab-panel>
         <q-tab-panel name="hardware">
           <HardwareTab :agent-id="agentId" :status="status" :refresh="refresh" />
@@ -174,6 +178,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useAgentLiveStatus } from "@/composables/useAgentLiveStatus";
 
 import OverviewTab   from "@/components/agentDetail/OverviewTab.vue";
+import ChecksTab     from "@/components/agentDetail/ChecksTab.vue";
 import HardwareTab   from "@/components/agentDetail/HardwareTab.vue";
 import SoftwareTab   from "@/components/agentDetail/SoftwareTab.vue";
 import ScriptsTab    from "@/components/agentDetail/ScriptsTab.vue";
@@ -190,6 +195,7 @@ const { status, loading, error, stale, refresh } = useAgentLiveStatus(agentId);
 
 const TAB_NAMES = [
   "overview",
+  "checks",
   "hardware",
   "software",
   "scripts",

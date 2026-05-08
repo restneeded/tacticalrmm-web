@@ -55,6 +55,13 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase M: checks library + run history.
+        path: "checks",
+        name: "Checks",
+        component: () => import("@/pages/ChecksPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         // Phase L: scripts library + editor + run history + scheduled.
         path: "scripts",
         name: "Scripts",

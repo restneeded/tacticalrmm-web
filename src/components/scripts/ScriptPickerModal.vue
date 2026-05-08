@@ -74,7 +74,7 @@
 
       <q-separator v-if="selected" />
 
-      <q-card-section v-if="selected" class="spm__form">
+      <q-card-section v-if="selected && mode === 'run'" class="spm__form">
         <div class="spm__form-row">
           <q-input v-model="argsRaw" dense outlined autogrow
                    :rows="2"
@@ -139,17 +139,23 @@ const props = withDefaults(defineProps<{
   initialScriptId?: number | null;
   /** Set by the caller to indicate dispatch is in flight. */
   dispatching?: boolean;
+  /** "run" (default) — show args/env/timeout, dispatch via "confirm" event.
+       "select" — hide the dispatch form, emit a "select" event with just the
+       script. Used by Phase M CheckEditor to attach a script to a check. */
+  mode?: "run" | "select";
 }>(), {
   context: "agent",
   agentLabel: "",
   bulkCount: 0,
   initialScriptId: null,
   dispatching: false,
+  mode: "run",
 });
 
 const emit = defineEmits<{
   (e: "update:modelValue", v: boolean): void;
   (e: "confirm", payload: PickerSelection): void;
+  (e: "select", payload: { script: ScriptRow }): void;
 }>();
 
 const rows      = ref<ScriptRow[]>([]);
@@ -164,19 +170,22 @@ const envRaw    = ref("");
 const timeout   = ref(90);
 const runAsUser = ref(false);
 
-const headerTitle = computed(() =>
-  props.context === "bulk"
+const headerTitle = computed(() => {
+  if (props.mode === "select") return "Choose script";
+  return props.context === "bulk"
     ? `Run script on ${props.bulkCount || 0} agent${props.bulkCount === 1 ? "" : "s"}`
-    : `Run script on ${props.agentLabel || "agent"}`,
-);
-const headerSubtitle = computed(() =>
-  props.context === "bulk"
+    : `Run script on ${props.agentLabel || "agent"}`;
+});
+const headerSubtitle = computed(() => {
+  if (props.mode === "select") return "Pick a script to attach to this check.";
+  return props.context === "bulk"
     ? "Pick a script. The selected agents will queue this run."
-    : "Pick a script. The agent will run it once and capture output.",
-);
-const confirmLabel = computed(() =>
-  props.context === "bulk" ? "Dispatch run" : "Run script",
-);
+    : "Pick a script. The agent will run it once and capture output.";
+});
+const confirmLabel = computed(() => {
+  if (props.mode === "select") return "Use this script";
+  return props.context === "bulk" ? "Dispatch run" : "Run script";
+});
 
 const filteredRows = computed<ScriptRow[]>(() => {
   const q = search.value.trim().toLowerCase();
@@ -228,6 +237,11 @@ function extract(err: unknown): string {
 
 function onConfirm() {
   if (!selected.value) return;
+  if (props.mode === "select") {
+    emit("select", { script: selected.value });
+    emit("update:modelValue", false);
+    return;
+  }
   const payload: PickerSelection = {
     script: selected.value,
     args: argsRaw.value.split("\n").map((s) => s.trim()).filter(Boolean),
