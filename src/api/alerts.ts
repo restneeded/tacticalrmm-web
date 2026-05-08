@@ -72,6 +72,7 @@ export async function fetchAlerts(
   const body: Record<string, unknown> = {};
   if (filter.timeFilter !== undefined) body.timeFilter = filter.timeFilter;
   if (filter.clientFilter !== undefined) body.clientFilter = filter.clientFilter;
+  if (filter.siteFilter !== undefined) body.siteFilter = filter.siteFilter;
   if (filter.severityFilter !== undefined)
     body.severityFilter = filter.severityFilter;
   if (filter.resolvedFilter !== undefined)

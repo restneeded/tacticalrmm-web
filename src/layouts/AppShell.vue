@@ -123,8 +123,7 @@ const { count: pendingCount } = usePendingCount();
 const leftDrawerOpen = ref(true);
 const miniSidebar = ref(false);
 
-// Sidebar groups — Phase A scaffold. Phase B+ will add child pages and
-// peel functionality out of /legacy DashboardView.vue.
+// Sidebar groups — modern AppShell navigation.
 
 const permsStore = useCurrentUserPermsStore();
 onMounted(() => {
@@ -177,7 +176,6 @@ const navGroups = [
     label: "Configure",
     items: [
       { to: "/settings", label: "Settings", icon: "settings" },
-      { to: "/legacy", label: "Legacy UI", icon: "history" },
     ],
   },
 ];

@@ -5,9 +5,8 @@
   Tabs (URL-driven via ?tab=, mirrors Phase J / Phase O):
     - Agents      embedded agents table filtered to this site
     - Automation  policies + alert template (mirrors Client detail)
-    - Alerts      alerts.fetchAlerts has only clientFilter; we narrow JS-side
-                  to alert.site === id (documented gap for Phase Z's backend
-                  expansion if it grows enough rows to matter).
+    - Alerts      alerts.fetchAlerts uses siteFilter (Phase Z) for
+                  server-side narrowing.
 
   Edit / Delete reuse the existing SiteFormDrawer and the same
   agents-must-be-moved-first warning behaviour from ClientsSitesPage.
@@ -149,7 +148,7 @@
       <q-tab-panel name="alerts" class="sdp__panel">
         <div class="sdp__alerts-bar">
           <q-btn flat dense icon="refresh" :loading="alertsLoading" @click="loadAlerts" no-caps label="Refresh" />
-          <span class="sdp__muted">Most recent first · narrowed from this client's alerts</span>
+          <span class="sdp__muted">Most recent first · filtered server-side by site</span>
         </div>
         <q-table
           :rows="alerts"
@@ -349,10 +348,8 @@ function onAssignAlertTemplate() {
 }
 
 // ─── Alerts tab ──────────────────────────────────────────────────────
-// fetchAlerts supports clientFilter only; we narrow to this site in JS.
-// For a typical client size this is well under a screenful — if it grows,
-// Phase Z can add a siteFilter on the backend (a ~3-line change in
-// alerts/views.py's PATCH /alerts/ filter handler).
+// Phase Z: fetchAlerts now accepts siteFilter; the PATCH /alerts/
+// handler filters server-side, so JS-side narrowing is gone.
 const alerts = ref<any[]>([]);
 const alertsCount = ref<number | null>(null);
 const alertsLoading = ref(false);
@@ -371,12 +368,11 @@ function alertTone(s: string): string {
 }
 
 async function loadAlerts() {
-  if (clientId.value == null) { alerts.value = []; alertsCount.value = 0; return; }
+  if (id.value == null) { alerts.value = []; alertsCount.value = 0; return; }
   alertsLoading.value = true;
   try {
-    const data = await fetchAlerts({ clientFilter: [clientId.value], resolvedFilter: false, snoozedFilter: false });
-    const all = (data ?? []) as any[];
-    alerts.value = all.filter((a) => a.site === id.value);
+    const data = await fetchAlerts({ siteFilter: [id.value], resolvedFilter: false, snoozedFilter: false });
+    alerts.value = (data ?? []) as any[];
     alertsCount.value = alerts.value.length;
   } catch (e) {
     console.warn("Failed to load alerts", e);
@@ -385,9 +381,8 @@ async function loadAlerts() {
   }
 }
 watch(tab, (v) => { if (v === "alerts" && alerts.value.length === 0) void loadAlerts(); }, { immediate: true });
-// Also (re)load alerts once we know the client (parent scope) — important
-// when the user opens /sites/:id with ?tab=alerts directly.
-watch(clientId, (v) => { if (v != null && tab.value === "alerts") void loadAlerts(); });
+// Reload when the route param changes (rare — same page, different :id).
+watch(id, (v) => { if (v != null && tab.value === "alerts") void loadAlerts(); });
 
 // ─── Edit / delete ───────────────────────────────────────────────────
 const editOpen = ref(false);

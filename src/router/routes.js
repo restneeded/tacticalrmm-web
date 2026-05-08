@@ -1,10 +1,8 @@
 import { useAuthStore } from "@/stores/auth";
 
 const routes = [
-  // ─── New Phase-A shell ──────────────────────────────────────────────
-  // The AppShell layout owns the sidebar + top bar + router-view.
-  // Each subsequent phase will peel a feature off the legacy DashboardView
-  // and land it as a real child route under this shell.
+  // ─── AppShell ──────────────────────────────────────────────────────
+  // Owns the sidebar + top bar + router-view for the entire app.
   {
     path: "/",
     name: "AppShell",
@@ -236,29 +234,6 @@ const routes = [
         path: ":pathMatch(.*)*",
         name: "NotFound",
         component: () => import("@/views/NotFound.vue"),
-        meta: { requireAuth: true },
-      },
-    ],
-  },
-
-  // ─── Legacy MainLayout — UNCHANGED, kept fully functional ──────────
-  // Every existing tab/feature stays reachable here while we migrate
-  // them into the new shell phase by phase.
-  {
-    path: "/legacy",
-    name: "MainLayout",
-    component: () => import("@/layouts/MainLayout.vue"),
-    children: [
-      {
-        path: "agents/:agent_id",
-        name: "Agent",
-        component: () => import("@/views/AgentView.vue"),
-        meta: { requireAuth: true },
-      },
-      {
-        path: "",
-        name: "Dashboard",
-        component: () => import("@/views/DashboardView.vue"),
         meta: { requireAuth: true },
       },
     ],

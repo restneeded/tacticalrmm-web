@@ -46,6 +46,7 @@ export interface AlertRow {
 export interface AlertListFilter {
   timeFilter?: number;
   clientFilter?: number[];
+  siteFilter?: number[];
   severityFilter?: AlertSeverity[];
   resolvedFilter?: boolean;
   snoozedFilter?: boolean;
