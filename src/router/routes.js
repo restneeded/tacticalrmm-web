@@ -43,15 +43,10 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase Q: real fleet-wide Patching surface (replaces Phase A placeholder).
         path: "patching",
         name: "Patching",
-        component: () => import("@/views/phase-b-placeholders/PhaseBPlaceholder.vue"),
-        props: {
-          title: "Patching",
-          icon: "system_update",
-          lede: "Windows updates, third-party patching via Chocolatey, ringed rollouts, and drift compliance.",
-          phase: "Phase F",
-        },
+        component: () => import("@/pages/PatchingPage.vue"),
         meta: { requireAuth: true },
       },
       {
@@ -73,6 +68,20 @@ const routes = [
         path: "tasks",
         name: "Tasks",
         component: () => import("@/pages/TasksPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase O: Policies library + assignments overview.
+        path: "policies",
+        name: "Policies",
+        component: () => import("@/pages/PoliciesPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase O: Policy detail page (Checks/Tasks/Assignments/WinUpdate).
+        path: "policies/:id(\\d+)",
+        name: "PolicyDetail",
+        component: () => import("@/pages/PolicyDetailPage.vue"),
         meta: { requireAuth: true },
       },
       {

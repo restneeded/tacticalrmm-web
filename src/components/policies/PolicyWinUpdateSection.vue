@@ -34,6 +34,11 @@
           reboot for Windows updates. Anything left as <em>Inherit</em>
           falls through to the parent policy or core settings.
         </p>
+        <p class="wu__sub">
+          <RouterLink class="wu__link" :to="{ name: 'Patching' }">
+            Manage fleet patches in /patching →
+          </RouterLink>
+        </p>
       </header>
 
       <section class="wu__group">
@@ -130,6 +135,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
+import { RouterLink } from "vue-router";
 import { createPatchPolicy, updatePatchPolicy } from "@/api/automation";
 import { notifySuccess, notifyError } from "@/utils/notify";
 
@@ -272,6 +278,12 @@ async function onSave() {
   }
 
   &__head { max-width: 720px; }
+  &__link {
+    color: var(--color-fg-link, #0078d4);
+    text-decoration: none;
+    font-size: 13px;
+    &:hover { text-decoration: underline; }
+  }
   &__title {
     font-size: var(--intune-font-size-500);
     font-weight: var(--intune-font-weight-semibold);

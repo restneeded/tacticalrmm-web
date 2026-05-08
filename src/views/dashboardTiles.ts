@@ -14,6 +14,7 @@ import ActivityFeedCard from "@/components/dashboard/ActivityFeedCard.vue";
 import ClientsOverviewCard from "@/components/dashboard/ClientsOverviewCard.vue";
 import CertExpiryCard from "@/components/dashboard/CertExpiryCard.vue";
 import VersionStatusCard from "@/components/dashboard/VersionStatusCard.vue";
+import PendingPatchesCard from "@/components/dashboard/PendingPatchesCard.vue";
 
 export interface DashboardTile {
   id: string;
@@ -33,4 +34,5 @@ export const CANONICAL_TILES: DashboardTile[] = [
   { id: "clients",  name: "Clients overview", icon: "groups",          component: markRaw(ClientsOverviewCard),size: "medium" },
   { id: "cert",     name: "Cert expiry",      icon: "shield",          component: markRaw(CertExpiryCard),     size: "medium" },
   { id: "version",  name: "Version status",   icon: "info",            component: markRaw(VersionStatusCard),  size: "medium" },
+  { id: "patches",  name: "Pending updates",  icon: "system_update",   component: markRaw(PendingPatchesCard), size: "medium" },
 ];

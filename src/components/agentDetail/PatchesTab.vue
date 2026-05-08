@@ -5,42 +5,41 @@
     GET  /winupdate/<id>/         → list of WinUpdate rows for the agent
     POST /winupdate/<id>/scan/    → triggers a scan task
     POST /winupdate/<id>/install/ → triggers install-all task
+    PUT  /winupdate/<update_id>/  → change action of a single update
 
-  Splits the rows into Pending vs Installed. Severity, KB, requires-
-  reboot are surfaced. The policies side stays intentionally untouched —
-  Phase Q rebuilds the per-policy approvals workflow.
+  Phase Q upgrade: per-KB action picker, bulk approve / ignore for the
+  agent's pending KBs, link out to the agent's policy editor.
 -->
 <template>
   <div class="ad-tab">
     <header class="ad-tab__bar">
-      <q-btn
-        flat
-        dense
-        no-caps
-        icon="search"
-        label="Scan now"
-        :loading="scanning"
-        @click="onScan"
-      />
-      <q-btn
-        flat
-        dense
-        no-caps
-        icon="download"
-        label="Install all"
-        :loading="installing"
-        :disable="pendingRows.length === 0"
-        @click="onInstallAll"
-      />
+      <q-btn flat dense no-caps icon="search" label="Scan now"
+        :loading="scanning" @click="onScan" />
+      <q-btn flat dense no-caps icon="download" label="Install approved"
+        :loading="installing" :disable="approvedRows.length === 0"
+        @click="onInstallApproved" />
+
+      <q-btn-dropdown
+        v-if="pendingRows.length"
+        flat dense no-caps icon="checklist"
+        :label="`Bulk (${pendingRows.length} pending)`"
+      >
+        <q-list dense>
+          <q-item clickable @click="bulkSet('approve')">
+            <q-item-section>Approve all pending</q-item-section>
+          </q-item>
+          <q-item clickable @click="bulkSet('ignore')">
+            <q-item-section>Ignore all pending</q-item-section>
+          </q-item>
+          <q-item clickable @click="bulkSet('nothing')">
+            <q-item-section>Reset to default</q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
+
       <q-space />
-      <q-btn
-        flat
-        dense
-        no-caps
-        icon="refresh"
-        :loading="loading"
-        @click="load"
-      />
+
+      <q-btn flat dense no-caps icon="refresh" :loading="loading" @click="load" />
     </header>
 
     <div v-if="loading && rows.length === 0" class="state">Loading patch state…</div>
@@ -67,7 +66,20 @@
           <div class="patch__meta">
             <span v-if="r.kb">{{ r.kb }}</span>
             <span v-if="r.downloaded">downloaded</span>
-            <span v-if="r.action && r.action !== 'nothing'">action: {{ r.action }}</span>
+            <span class="patch__action">
+              <select
+                class="patch__select"
+                :value="r.action"
+                :disabled="busyIds.has(r.id)"
+                @change="onActionChange(r, $event)"
+              >
+                <option value="nothing">Default</option>
+                <option value="approve">Approve</option>
+                <option value="ignore">Ignore</option>
+                <option value="inherit">Inherit</option>
+              </select>
+              <q-spinner v-if="busyIds.has(r.id)" size="14px" />
+            </span>
           </div>
         </li>
       </ul>
@@ -94,16 +106,24 @@
         </li>
       </ul>
     </section>
+
+    <footer class="ad-tab__footer">
+      <RouterLink class="link" :to="{ name: 'Patching' }">
+        Manage fleet patches →
+      </RouterLink>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, reactive } from "vue";
 import { useQuasar } from "quasar";
+import { RouterLink } from "vue-router";
 import {
   fetchAgentUpdates,
   runAgentUpdateScan,
   runAgentUpdateInstall,
+  editAgentUpdate,
 } from "@/api/winupdates";
 
 interface WinUpdateRow {
@@ -128,6 +148,7 @@ const loading = ref(true);
 const errorMsg = ref("");
 const scanning = ref(false);
 const installing = ref(false);
+const busyIds = reactive(new Set<number>());
 
 async function load() {
   if (!props.agentId) return;
@@ -153,6 +174,65 @@ const installedRows = computed(() =>
     .filter((r) => r.installed)
     .sort((a, b) => (b.date_installed || "").localeCompare(a.date_installed || "")),
 );
+const approvedRows = computed(() =>
+  pendingRows.value.filter((r) => r.action === "approve"),
+);
+
+async function onActionChange(row: WinUpdateRow, ev: Event) {
+  const target = ev.target as HTMLSelectElement;
+  const next = target.value;
+  busyIds.add(row.id);
+  try {
+    await editAgentUpdate(row.id, { action: next });
+    row.action = next;
+    $q.notify({
+      type: "positive",
+      message: `${row.kb || row.title || "Update"} → ${next}`,
+      position: "top",
+      timeout: 1500,
+    });
+  } catch (err) {
+    target.value = row.action;
+    $q.notify({
+      type: "negative",
+      message: `Couldn't update: ${extractMessage(err)}`,
+      position: "top",
+      timeout: 2500,
+    });
+  } finally {
+    busyIds.delete(row.id);
+  }
+}
+
+async function bulkSet(action: "approve" | "ignore" | "nothing") {
+  const targets = pendingRows.value.slice();
+  if (!targets.length) return;
+  $q.notify({
+    type: "ongoing",
+    message: `Updating ${targets.length} updates…`,
+    position: "top",
+    timeout: 1200,
+  });
+  await Promise.all(
+    targets.map(async (r) => {
+      busyIds.add(r.id);
+      try {
+        await editAgentUpdate(r.id, { action });
+        r.action = action;
+      } catch {
+        /* swallow per-row failures, summarized below */
+      } finally {
+        busyIds.delete(r.id);
+      }
+    }),
+  );
+  $q.notify({
+    type: "positive",
+    message: `Bulk ${action} applied.`,
+    position: "top",
+    timeout: 2000,
+  });
+}
 
 async function onScan() {
   scanning.value = true;
@@ -176,13 +256,13 @@ async function onScan() {
   }
 }
 
-async function onInstallAll() {
+async function onInstallApproved() {
   installing.value = true;
   try {
     await runAgentUpdateInstall(props.agentId);
     $q.notify({
       type: "positive",
-      message: "Install-all queued. The agent will run updates on its next check-in.",
+      message: "Install queued. The agent will run approved updates on its next check-in.",
       position: "top",
       timeout: 3500,
     });
@@ -234,6 +314,10 @@ onMounted(load);
     display: flex;
     align-items: center;
     gap: 4px;
+  }
+  &__footer {
+    margin-top: 8px;
+    text-align: right;
   }
 }
 
@@ -314,6 +398,21 @@ onMounted(load);
     font-size: 11px;
     color: var(--color-fg-secondary);
     margin-top: 2px;
+    align-items: center;
+  }
+  &__action {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  &__select {
+    background: var(--color-bg-surface);
+    color: var(--color-fg-primary);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 4px;
+    font-size: 11px;
+    padding: 2px 6px;
   }
 
   &--ok {
@@ -341,5 +440,12 @@ onMounted(load);
     background: var(--color-bg-page);
     color: var(--color-fg-secondary);
   }
+}
+
+.link {
+  color: var(--color-fg-link, #0078d4);
+  text-decoration: none;
+  font-size: 13px;
+  &:hover { text-decoration: underline; }
 }
 </style>
