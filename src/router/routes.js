@@ -90,6 +90,20 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase P: Alerts dashboard — Active / History / Templates tabs.
+        path: "alerts",
+        name: "Alerts",
+        component: () => import("@/pages/AlertsPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
+        // Phase P: Alert template detail editor.
+        path: "alerts/templates/:id(\\d+)",
+        name: "AlertTemplateDetail",
+        component: () => import("@/pages/AlertTemplateDetailPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         path: "scripts/new",
         name: "ScriptNew",
         component: () => import("@/pages/ScriptDetailPage.vue"),

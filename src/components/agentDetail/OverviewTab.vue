@@ -63,6 +63,10 @@
             </span>
           </li>
         </ul>
+        <router-link
+          :to="{ path: '/alerts', query: { agent: props.agentId } }"
+          class="health__link"
+        >View alerts for this device →</router-link>
       </article>
     </div>
 
@@ -259,5 +263,14 @@ onMounted(loadHistory);
   &__name { font-weight: 500; }
   &__meta { color: var(--color-fg-secondary); font-size: 12px; }
   &__status { color: var(--color-fg-secondary); font-size: 12px; }
+}
+
+.health__link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-brand-rest);
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
 }
 </style>

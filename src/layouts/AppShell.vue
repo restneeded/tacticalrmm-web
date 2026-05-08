@@ -91,6 +91,9 @@
                 <q-icon :name="item.icon" size="18px" />
               </q-item-section>
               <q-item-section v-if="!miniSidebar">{{ item.label }}</q-item-section>
+              <q-item-section v-if="!miniSidebar && item.badgeKey === 'alertCount' && alertCount > 0" side>
+                <q-badge color="negative" :label="alertCount" />
+              </q-item-section>
               <q-tooltip
                 v-if="miniSidebar"
                 anchor="center right"
@@ -132,8 +135,10 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useThemeStore } from "@/stores/theme";
+import { useAlertCount }  from "@/composables/useAlertCount";
 
 const theme = useThemeStore();
+const { count: alertCount } = useAlertCount();
 
 const leftDrawerOpen = ref(true);
 const miniSidebar = ref(false);
@@ -161,6 +166,7 @@ const navGroups = [
       { to: "/scripts", label: "Scripts", icon: "code" },
       { to: "/tasks", label: "Tasks", icon: "schedule" },
       { to: "/policies", label: "Policies", icon: "policy" },
+      { to: "/alerts",   label: "Alerts",   icon: "notifications_active", badgeKey: "alertCount" },
       { to: "/software", label: "Software", icon: "apps" },
       { to: "/patching", label: "Patching", icon: "system_update" },
     ],

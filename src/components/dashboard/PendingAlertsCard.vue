@@ -8,7 +8,7 @@
     icon="notifications_active"
     :loading="loading"
     :error="error"
-    :to="{ path: '/legacy' }"
+    :to="{ path: '/alerts' }"
     :accent="accent"
     aria-label="Pending alerts"
   >
