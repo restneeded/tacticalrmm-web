@@ -225,6 +225,13 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        // Phase T6: superuser-only honesty page — what's done, what's left, what's deferred.
+        path: "migration-status",
+        name: "MigrationStatus",
+        component: () => import("@/pages/MigrationStatusPage.vue"),
+        meta: { requireAuth: true },
+      },
+      {
         // Phase T5: AppShell-native 404 — last child so any unknown URL renders inside the modern chrome.
         path: ":pathMatch(.*)*",
         name: "NotFound",

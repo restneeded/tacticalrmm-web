@@ -169,6 +169,8 @@ const navGroups = [
       { to: "/users",    label: "Users",    icon: "people",       permKey: "can_list_accounts" },
       { to: "/roles",    label: "Roles",    icon: "admin_panel_settings", permKey: "can_list_roles" },
       { to: "/api-keys", label: "API keys", icon: "vpn_key",      permKey: "can_list_api_keys" },
+      // Phase T6 — internal honesty page; superuser-only via is_superuser permKey.
+      { to: "/migration-status", label: "Migration status", icon: "swap_horiz", permKey: "is_superuser" },
     ],
   },
   {
