@@ -224,6 +224,13 @@ const routes = [
         component: () => import("@/pages/SettingsPage.vue"),
         meta: { requireAuth: true },
       },
+      {
+        // Phase T5: AppShell-native 404 — last child so any unknown URL renders inside the modern chrome.
+        path: ":pathMatch(.*)*",
+        name: "NotFound",
+        component: () => import("@/views/NotFound.vue"),
+        meta: { requireAuth: true },
+      },
     ],
   },
 
@@ -302,7 +309,6 @@ const routes = [
       auth.next = from.fullPath;
     },
   },
-  { path: "/:catchAll(.*)", component: () => import("@/views/NotFound.vue") },
 ];
 
 export default routes;
