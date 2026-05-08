@@ -157,8 +157,9 @@ async function run(action: keyof typeof busy) {
         body: r.slice(0, 12).map(p => `${p.pid.toString().padStart(6, " ")}  ${p.name}`).join("\n") + (r.length > 12 ? `\n… +${r.length - 12} more` : ""),
       };
     }
-  } catch (e: any) {
-    lastResult.value = { kind: "neg", label: e?.response?.data?.toString?.() || "Request failed." };
+  } catch (e) {
+    const err = e as { response?: { data?: { toString?: () => string } } };
+    lastResult.value = { kind: "neg", label: err?.response?.data?.toString?.() || "Request failed." };
     $q.notify({ type: "negative", message: lastResult.value.label });
   } finally {
     busy[action] = false;

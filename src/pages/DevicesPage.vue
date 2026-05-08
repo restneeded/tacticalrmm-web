@@ -247,7 +247,7 @@ function bulkUninstall() {
     title: "Uninstall agents?",
     message:
       `<b>${n}</b> agent${n === 1 ? "" : "s"} will go offline permanently. ` +
-      `Re-installing requires running the installer again.`,
+      "Re-installing requires running the installer again.",
     okLabel: "Uninstall",
   }).onOk(() => dispatchAndNotify("uninstall", "Uninstall"));
 }
