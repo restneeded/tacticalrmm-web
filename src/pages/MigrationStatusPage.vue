@@ -24,7 +24,7 @@
         <p class="mig__lede">
           The AppShell is the modern UI; the <code>/legacy</code> route still
           hosts the original Vue 2-style screens during the dev cycle. Phase Z
-          retires legacy entirely. Below: what's done, what's left, and what's
+          retired legacy entirely. Below: what's done, what's left, and what's
           permanently deferred. This page is hand-curated — it is the truth
           source, not a live report.
         </p>
@@ -145,7 +145,7 @@
 // introspection — keeping it simple is a feature. Future phases can
 // promote items into a CI-driven check if it ever becomes interesting.
 
-const lastReviewed = "2026-05-08";
+const lastReviewed = "2026-05-11";
 
 interface PhaseRow {
   phase: string;
@@ -172,40 +172,11 @@ interface ListRow {
   meta: string;
 }
 
-const outstanding: ListRow[] = [
-  {
-    label: "Delete src/components/SiteDetailDrawer.vue",
-    meta: "Orphaned by Phase T7 (ClientsSitesPage now click-navigates to /sites/:id).",
-  },
-  {
-    label: "Delete src/components/modals/coresettings/EditCoreSettings.vue and FileBar.vue",
-    meta: "Made obsolete by the Phase T2 SettingsPage. Last refs are inside the legacy MainLayout.",
-  },
-  {
-    label: "Delete src/views/DashboardView.vue",
-    meta: "Legacy main dashboard; every tile and right-click action is now in the AppShell.",
-  },
-  {
-    label: "Delete src/layouts/MainLayout.vue",
-    meta: "Legacy router layout — only mounts the legacy DashboardView/AgentView pair.",
-  },
-  {
-    label: "Delete src/views/AgentView.vue",
-    meta: "Replaced by Phase J AgentDetailPage at /devices/:agent_id.",
-  },
-  {
-    label: "Drop /legacy and /legacy/agents/:agent_id routes from src/router/routes.js",
-    meta: "Once the four files above are gone, these route entries reference nothing.",
-  },
-  {
-    label: "Final retheme — brand tokens to final palette",
-    meta: "Finalize CSS custom properties in src/css/intune-tokens.scss.",
-  },
-  {
-    label: "Cloudflare cache-control fix — bake into prod nginx",
-    meta: "Currently dev-only via quasar.config.js; needs to land in the prod nginx config.",
-  },
-];
+// Phase Z shipped 2026-05-08 — every item that previously lived here
+// (legacy file deletes, /legacy route block, retheme palette, prod nginx
+// cache-control header) is now landed. Kept as an empty array so the
+// section structure survives if future cutover work reuses it.
+const outstanding: ListRow[] = [];
 
 const deferredBackend: ListRow[] = [
   {
