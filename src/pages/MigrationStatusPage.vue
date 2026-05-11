@@ -180,16 +180,8 @@ const outstanding: ListRow[] = [];
 
 const deferredBackend: ListRow[] = [
   {
-    label: "PATCH /alerts/ siteFilter param (~3 lines)",
-    meta: "T7-flagged — Site-scope alerts currently fetched via client filter and JS-filtered.",
-  },
-  {
     label: "MeshCentral verify-connection endpoint",
     meta: "T2-flagged — would let the Settings page surface a live mesh link state.",
-  },
-  {
-    label: "get_certs() friendlier error on single-segment ALLOWED_HOSTS",
-    meta: "T4-flagged — current trace is opaque; cosmetic improvement only.",
   },
   {
     label: "/v2/logout/ alias for naming consistency",
